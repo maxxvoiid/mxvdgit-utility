@@ -120,9 +120,8 @@ sliceBtn.addEventListener('click', async ()=>{
   const order = orderEl.value; // 'row-col' | 'col-row'
   const prefix = prefixEl.value || 'sprite_';
   const zpad = Math.max(1, parseNum(zpadEl));
+  const lastColVertical = els('lastColVertical').checked;
   const startIndex = parseNum(els('startIndex'));
-  const lastColVerticalEl = els('lastColVertical');
-  const lastColVertical = lastColVerticalEl ? lastColVerticalEl.checked : false;
 
   const zip = new JSZip();
   const canvas = document.createElement('canvas');
@@ -137,38 +136,35 @@ sliceBtn.addEventListener('click', async ()=>{
     if(sx+sw>sheetW || sy+sh>sheetH) return;
     ctx.clearRect(0,0,sw,sh);
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-    const blob = await new Promise(res=>canvas.toBlob(res, 'image/png'));
+    const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
     const name = `${prefix}${String(count + startIndex).padStart(zpad,'0')}.png`;
     zip.file(name, blob);
     count++;
   };
 
-  // === RECORRIDO NORMAL ===
   if(order === 'row-col'){
-    for(let r=0; r<rows; r++){
-      for(let c=0; c<cols; c++){
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
         if(limit>0 && count>=limit) break;
-        // si la última columna debe ir al final, la saltamos de momento
-        if(lastColVertical && c === cols - 1) continue;
-        await pushFrame(r, c);
+        if(lastColVertical && c === cols-1) continue; // saltar última col aquí
+        await pushFrame(r,c);
       }
       if(limit>0 && count>=limit) break;
     }
 
-    // === ÚLTIMA COLUMNA VERTICAL (excepción) ===
+    // procesar última columna en vertical
     if(lastColVertical){
       const c = cols - 1;
-      for(let r=0; r<rows; r++){
+      for(let r=0;r<rows;r++){
         if(limit>0 && count>=limit) break;
-        await pushFrame(r, c);
+        await pushFrame(r,c);
       }
     }
-
   } else { // col-row
-    for(let c=0; c<cols; c++){
-      for(let r=0; r<rows; r++){
+    for(let c=0;c<cols;c++){
+      for(let r=0;r<rows;r++){
         if(limit>0 && count>=limit) break;
-        await pushFrame(r, c);
+        await pushFrame(r,c);
       }
       if(limit>0 && count>=limit) break;
     }
