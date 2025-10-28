@@ -145,15 +145,23 @@ function renderThresholds() {
   });
 
   // Wire events
-  thresholdList.querySelectorAll('.th-time').forEach(inp => {
-    inp.oninput = e => {
-      const i = +e.target.dataset.i;
-      thresholds[i].time = Math.max(0, +e.target.value || 0);
-      sortThresholds();
-      renderThresholds();
-      applyZoneDynamic(timer.timeSec);
-    };
-  });
+thresholdList.querySelectorAll('.th-time').forEach(inp => {
+  inp.oninput = e => {
+    const i = +e.target.dataset.i;
+    thresholds[i].time = Math.max(0, +e.target.value || 0);
+    // solo actualiza el valor local, sin redibujar todavía
+  };
+  inp.onblur = e => { // 🔥 al perder foco (cuando termina de editar)
+    sortThresholds();
+    renderThresholds();
+    applyZoneDynamic(timer.timeSec);
+  };
+  inp.onkeydown = e => { // 🔥 también si presiona Enter
+    if (e.key === 'Enter') {
+      e.target.blur(); // fuerza el blur, lo que activa el reordenamiento
+    }
+  };
+});
   thresholdList.querySelectorAll('.th-color').forEach(inp => {
     inp.oninput = e => {
       const i = +e.target.dataset.i;
