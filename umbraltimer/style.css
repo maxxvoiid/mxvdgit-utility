@@ -337,6 +337,25 @@ footer a:visited {
   color: #a78bfa; /* mismo color que normal */
 }
 
+html, body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+footer {
+  margin-top: auto;
+  padding: 10px 16px;
+  color: #aeaeae;
+  font-size: 12px;
+  border-top: 1px solid #222;
+  background: var(--card);
+}
+
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: 1fr;
