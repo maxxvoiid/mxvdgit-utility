@@ -117,9 +117,11 @@ sliceBtn.addEventListener('click', async ()=>{
   if(!cfg) return;
   const {rows, cols, sw, sh, gapx, gapy, offx, offy} = cfg;
   const limit = parseNum(limitEl);
-  const order = orderEl.value;
+  const order = orderEl.value; // 'row-col' | 'col-row'
   const prefix = prefixEl.value || 'sprite_';
   const zpad = Math.max(1, parseNum(zpadEl));
+  const lastColVertical = els('lastColVertical').checked;
+  const startIndex = parseNum(els('startIndex'));
 
   const zip = new JSZip();
   const canvas = document.createElement('canvas');
@@ -134,8 +136,8 @@ sliceBtn.addEventListener('click', async ()=>{
     if(sx+sw>sheetW || sy+sh>sheetH) return;
     ctx.clearRect(0,0,sw,sh);
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-    const blob = await new Promise(res=>canvas.toBlob(res, 'image/png'));
-    const name = `${prefix}${pad(count, zpad)}.png`;
+    const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
+    const name = `${prefix}${String(count + startIndex).padStart(zpad,'0')}.png`;
     zip.file(name, blob);
     count++;
   };
@@ -144,11 +146,21 @@ sliceBtn.addEventListener('click', async ()=>{
     for(let r=0;r<rows;r++){
       for(let c=0;c<cols;c++){
         if(limit>0 && count>=limit) break;
+        if(lastColVertical && c === cols-1) continue; // saltar última col aquí
         await pushFrame(r,c);
       }
       if(limit>0 && count>=limit) break;
     }
-  } else {
+
+    // procesar última columna en vertical
+    if(lastColVertical){
+      const c = cols - 1;
+      for(let r=0;r<rows;r++){
+        if(limit>0 && count>=limit) break;
+        await pushFrame(r,c);
+      }
+    }
+  } else { // col-row
     for(let c=0;c<cols;c++){
       for(let r=0;r<rows;r++){
         if(limit>0 && count>=limit) break;
@@ -158,7 +170,7 @@ sliceBtn.addEventListener('click', async ()=>{
     }
   }
 
-  const zipName = (prefix || 'sprites_').replace(/[^a-z0-9_\-]/gi,'') || 'sprites_';
+  const zipName = (prefix || 'sprites_').replace(/[^a-z0-9_\\-]/gi,'') || 'sprites_';
   const out = await zip.generateAsync({type:'blob', compression:'DEFLATE'});
   saveAs(out, `${zipName}frames.zip`);
 });
