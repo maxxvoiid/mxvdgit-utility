@@ -314,6 +314,29 @@ select {
   color: var(--accent);
 }
 
+footer{
+  padding:10px 16px;
+  color:#aeaeae;
+  font-size:12px;
+  border-top:1px solid #222;
+}
+
+footer a {
+  color: #a78bfa; /* violeta suave */
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+footer a:hover {
+  color: #c084fc; /* un poco más brillante */
+  text-shadow: 0 0 6px rgb(192, 132, 252);
+}
+
+footer a:visited {
+  color: #a78bfa; /* mismo color que normal */
+}
+
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: 1fr;

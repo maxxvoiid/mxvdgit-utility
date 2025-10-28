@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>mxvd.me | Sprite Sheet Slicer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>
+      <span class="logo">🧩</span>
+      Sprite Sheet Slicer
+    </h1>
+  </header>
+
+  <main>
+    <section class="panel card">
+      <div class="grid">
+        <h2>1) Carga tu sprite sheet</h2>
+        <input id="file" type="file" accept="image/*" />
+        <div class="hint">Admite PNG/JPG/GIF.</div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="grid">
+        <h2>2) Parámetros de corte</h2>
+        <div class="grid cols-2">
+          <div>
+            <label>Filas (rows)</label>
+            <input id="rows" type="number" min="0" placeholder="p.ej. 4 (0 = calcular)" />
+          </div>
+          <div>
+            <label>Columnas (cols)</label>
+            <input id="cols" type="number" min="0" placeholder="p.ej. 8 (0 = calcular)" />
+          </div>
+          <div>
+            <label>Ancho sprite (px)</label>
+            <input id="sw" type="number" min="0" placeholder="p.ej. 64 (0 = calcular)" />
+          </div>
+          <div>
+            <label>Alto sprite (px)</label>
+            <input id="sh" type="number" min="0" placeholder="p.ej. 64 (0 = calcular)" />
+          </div>
+          <div>
+            <label>Espacio X (gap, px)</label>
+            <input id="gapx" type="number" min="0" value="0" />
+          </div>
+          <div>
+            <label>Espacio Y (gap, px)</label>
+            <input id="gapy" type="number" min="0" value="0" />
+          </div>
+          <div>
+            <label>Offset X (px)</label>
+            <input id="offx" type="number" min="0" value="0" />
+          </div>
+          <div>
+            <label>Offset Y (px)</label>
+            <input id="offy" type="number" min="0" value="0" />
+          </div>
+          <div>
+            <label>Límite de imágenes</label>
+            <input id="limit" type="number" min="0" placeholder="0 = todas" value="0" />
+          </div>
+          <div>
+            <label>Orden de recorrido</label>
+            <select id="order">
+              <option value="row-col">Fila → Columna (row-major)</option>
+              <option value="col-row">Columna → Fila (column-major)</option>
+            </select>
+          </div>
+          <div>
+            <label>Prefijo de nombre</label>
+            <input id="prefix" type="text" placeholder="sprite_" value="sprite_" />
+          </div>
+          <div>
+            <label>Ceros a la izquierda</label>
+            <input id="zpad" type="number" min="1" value="3" />
+          </div>
+        </div>
+        <div class="row">
+          <button id="analyze" class="ghost">Calcular rejilla</button>
+          <button id="slice" class="primary">Cortar y descargar .zip</button>
+        </div>
+        <div class="hint">Puedes dejar <b>filas/columnas</b> en 0 y poner <b>ancho/alto</b> del sprite; o al revés.</div>
+      </div>
+    </section>
+
+    <section class="panel card">
+      <div class="preview-wrap">
+        <h2>Vista previa</h2>
+        <div class="row inline">
+          <span class="hint" id="sheetInfo">—</span>
+          <span class="hint" id="gridInfo">—</span>
+        </div>
+        <canvas id="preview" width="0" height="0"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Hecho con ♥ para cortar sprite sheets rápido. Incluye ZIP con <i>JSZip</i> y descarga con <i>FileSaver</i>. <b>Este sitio fue creado a partir de una petición en ChatGPT y se aloja en <a href="https://utility.mxvd.me" target="_blank">utility.mxvd.me</a>.</b>
+  </footer>
+
+  <!-- Libs para crear ZIP y descargar -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
