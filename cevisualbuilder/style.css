@@ -176,3 +176,29 @@ textarea { min-height: 60px; resize: vertical; }
 }
 #screenGuard h3{ margin: 0 0 6px; }
 #screenGuard p{ margin: 6px 0 0; color: var(--muted); }
+
+footer {
+  padding: 10px 16px;
+  color: #9aa3af;
+  font-size: 12px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: var(--panel);
+  text-align: center;
+  line-height: 1.6;
+}
+
+footer a {
+  color: #a78bfa; /* violeta suave */
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+footer a:hover {
+  color: #c084fc; /* un poco más brillante */
+  text-shadow: 0 0 6px rgb(192, 132, 252);
+}
+
+footer a:visited {
+  color: #a78bfa; /* mismo color que normal */
+}
