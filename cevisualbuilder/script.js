@@ -413,7 +413,129 @@ function buildYAML(){
   });
   return lines.join('\n');
 }
-function updateYAML(){ ymlOut.textContent = buildYAML(); }
+function updateYAML(){ ymlOut.textContent = buildYAML(); 
+// ====== Importador YML (round-trip con buildYAML) ======
+const IMPORT_OPS = ['==','!=','>=','<=','>','<','contains','equals'];
+
+function unquote(str){
+  str = String(str ?? '').trim();
+  if (str.startsWith("'") && str.endsWith("'")) {
+    str = str.slice(1, -1).replace(/''/g, "'");
+  }
+  return str;
+}
+
+function parseConditionStr(s){
+  const op = IMPORT_OPS.find(o => s.includes(` ${o} `));
+  if (!op) return { left: s, op: '==', right: '' };
+  const [left, right] = s.split(` ${op} `);
+  return { left: left.trim(), op, right: right.trim() };
+}
+
+function importFromYML(text){
+  const lines = text.replace(/\r/g,'').split('\n');
+  let i = 0;
+  const at = idx => lines[idx] ?? '';
+
+  // buscar "events:"
+  while (i < lines.length && !/^events:\s*$/.test(at(i).trim())) i++;
+  if (i >= lines.length) throw new Error('No se encontró "events:"');
+  i++;
+
+  const imported = [];
+
+  while (i < lines.length){
+    const evHead = at(i).match(/^\s{2}([^:#]+):\s*$/);
+    if (!evHead){ i++; continue; }
+
+    const name = evHead[1].trim();
+    const ev = { id: uid(), name, type: 'repetitive', blocks: [] };
+    i++;
+
+    for (; i < lines.length; i++){
+      const line = at(i);
+      if (/^\s{2}[^ ]/.test(line)) break; // siguiente evento
+
+      let m;
+
+      if (m = line.match(/^\s{4}type:\s*(\S+)/)){
+        ev.type = m[1].trim();
+      }
+      else if (m = line.match(/^\s{4}repetitive_time:\s*(\d+)/)){
+        ev.blocks.push({ id: uid(), kind: 'setting', subtype: 'repetitive_time', data: { ticks: parseInt(m[1],10) }});
+      }
+      else if (m = line.match(/^\s{4}ignore_with_permission:\s*(.+)$/)){
+        ev.blocks.push({ id: uid(), kind: 'setting', subtype: 'ignore_with_permission', data: { perm: m[1].trim() }});
+      }
+      else if (/^\s{4}conditions:\s*$/.test(line)){
+        i++;
+        while (i < lines.length && (m = at(i).match(/^\s{6}-\s*(.+)\s*$/))){
+          const condStr = unquote(m[1]);
+          const data = parseConditionStr(condStr);
+          ev.blocks.push({ id: uid(), kind: 'condition', subtype: 'basic_condition', data });
+          i++;
+        }
+        i--; // retrocede uno para que el for++ caiga bien
+      }
+      else if (/^\s{4}actions:\s*$/.test(line)){
+        i++;
+        if (/^\s{6}default:\s*$/.test(at(i))){
+          i++;
+          while (i < lines.length && (m = at(i).match(/^\s{8}-\s*(.+)\s*$/))){
+            const raw = unquote(m[1]).trim();
+
+            // to_target: <inner>: <value>
+            let mm = raw.match(/^to_target:\s*([^:]+):\s*(.*)$/);
+            if (mm){
+              ev.blocks.push({
+                id: uid(),
+                kind: 'action',
+                subtype: 'to_target',
+                data: { innerType: mm[1].trim(), value: mm[2].trim() }
+              });
+              i++; continue;
+            }
+
+            // tipo: valor
+            mm = raw.match(/^([^:]+):\s*(.*)$/);
+            if (mm){
+              const act = mm[1].trim();
+              const val = mm[2];
+
+              const map = {
+                message: 'send_message',
+                console_command: 'console_command',
+                cancel_event: 'cancel_event',
+                kick: 'kick'
+              };
+              const subtype = map[act] || 'send_message';
+
+              if (subtype === 'cancel_event'){
+                ev.blocks.push({ id: uid(), kind: 'action', subtype, data: { value: /true/i.test(val.trim()) }});
+              } else if (subtype === 'kick'){
+                ev.blocks.push({ id: uid(), kind: 'action', subtype, data: { reason: val }});
+              } else if (subtype === 'console_command'){
+                ev.blocks.push({ id: uid(), kind: 'action', subtype, data: { cmd: val }});
+              } else {
+                ev.blocks.push({ id: uid(), kind: 'action', subtype, data: { text: val }});
+              }
+            }
+            i++;
+          }
+          i--;
+        } else {
+          i--;
+        }
+      }
+    }
+
+    imported.push(ev);
+  }
+
+  // aplicar (reemplaza lo actual)
+  state.events = imported;
+  render();
+}
 
 /* ---------- YAML panel responsive ---------- */
 function isMobileLandscape(){ return window.matchMedia('(max-width: 1024px)').matches && window.matchMedia('(orientation: landscape)').matches; }
@@ -444,6 +566,27 @@ document.getElementById('collapseBtn').addEventListener('click', collapseYAML);
 yamlShowBtn.addEventListener('click', expandYAML);
 window.addEventListener('resize', applyResponsiveYAML);
 window.addEventListener('orientationchange', applyResponsiveYAML);
+
+// Botones de importación
+const importBtn   = document.getElementById('importBtn');
+const importInput = document.getElementById('importInput');
+
+importBtn.addEventListener('click', () => importInput.click());
+
+importInput.addEventListener('change', async (e) => {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  const text = await f.text();
+  if (state.events.length && !confirm('Esto reemplazará los eventos actuales. ¿Continuar?')) { e.target.value = ''; return; }
+  try {
+    importFromYML(text);
+  } catch (err) {
+    alert('No se pudo importar el YML. ¿Seguro que viene de este builder?\n' + err.message);
+    console.error(err);
+  } finally {
+    e.target.value = '';
+  }
+});
 
 /* ---------- Screen Guard ---------- */
 const guardEl = document.getElementById('screenGuard');
