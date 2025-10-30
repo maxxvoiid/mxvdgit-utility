@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ConditionalEvents — Visual Builder (Scratch-style)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Screen Guard -->
+  <div id="screenGuard" class="hidden" aria-modal="true" role="dialog">
+    <div class="card">
+      <div style="font-size:48px; line-height:1; margin-bottom:8px;">📱↔️</div>
+      <h3>Gira tu dispositivo o amplía la ventana</h3>
+      <p>Para usar el builder, pon el móvil en horizontal <u>o</u> aumenta el ancho a <strong id="minWidthText">980 px</strong> o más.</p>
+    </div>
+  </div>
+
+  <div class="app">
+    <!-- LEFT: PALETTE (se llena desde JS) -->
+    <div class="panel">
+      <h2>Block Palette</h2>
+      <div class="palette" id="palette"></div>
+    </div>
+
+    <!-- CENTER: BUILDER -->
+    <div class="panel">
+      <div class="builder-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <strong>Event Builder</strong>
+          <span class="kbd">Arrastra bloques aquí ↓</span>
+        </div>
+        <div class="builder-actions">
+          <button class="btn" id="newEventBtn">+ New Event</button>
+        </div>
+      </div>
+      <div class="canvas" id="canvas"></div>
+    </div>
+
+    <!-- RIGHT: YAML OUTPUT -->
+    <div class="panel" id="yamlPanel">
+      <div class="yaml-toolbar">
+        <strong>YML Output</strong>
+        <span style="flex:1"></span>
+        <button class="btn" id="collapseBtn" title="Colapsar YML">Hide</button>
+        <button class="btn" id="copyBtn">Copy</button>
+        <button class="btn" id="downloadBtn">Download</button>
+      </div>
+      <div class="yaml"><pre id="yml"># Arrastra bloques a un evento para generar YAML…</pre></div>
+    </div>
+  </div>
+
+  <button id="yamlShowBtn" class="yaml-peek" title="Mostrar YAML">YML</button>
+
+  <script src="script.js"></script>
+</body>
+</html>
