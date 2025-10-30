@@ -1,14 +1,5 @@
 /* =========================================================
-   ConditionalEvents Visual Builder — Data-Driven version
-   Cómo agregar bloques rápido:
-   1) Agrega tu bloque en REGISTRY[kind][subtype] con:
-      - label: texto en la UI
-      - className: ev | cond | msg | cmd | danger | setting
-      - defaults: datos iniciales (objeto)
-      - render(bodyEl, block, update): pinta controles y llama a update() cuando cambien
-      - toYAML(block): devuelve string YAML (acción) o condición (sin prefijo)
-      - settingKey (opcional): si es un "setting", qué clave escribir (p.ej. 'repetitive_time')
-   2) La paleta, el render y el YAML se actualizan solos. Disfruta :D
+   ConditionalEvents Visual Builder — Data-Driven + Action Groups
    ========================================================= */
 
 const state = { events: [], dragData: null };
@@ -21,10 +12,12 @@ const yamlShowBtn = document.getElementById('yamlShowBtn');
 const MIN_WIDTH = 980;
 document.getElementById('minWidthText').textContent = MIN_WIDTH + ' px';
 
-const uid = () => Math.random().toString(36).slice(2, 9);
+const uid  = () => Math.random().toString(36).slice(2, 9);
 const escQ = s => String(s ?? '').replace(/'/g, "''");
+const deepClone = o => JSON.parse(JSON.stringify(o));
+const slugKey = s => String(s||'').trim().toLowerCase().replace(/[^a-z0-9_-]+/g,'_') || 'group';
 
-/* ---------- REGISTRY (edita aquí para agregar bloques) ---------- */
+/* ---------- REGISTRY (igual que el tuyo; puedes editar aquí para añadir bloques) ---------- */
 const REGISTRY = {
   eventType: {
     block_interact: { label:'Block Interact', className:'ev' },
@@ -142,7 +135,7 @@ const REGISTRY = {
   }
 };
 
-/* ---------- Helpers ---------- */
+/* ---------- Helpers / UX ---------- */
 window.addEventListener("beforeunload", (e) => {
   if (state.events.length > 0) {
     e.preventDefault();
@@ -154,14 +147,12 @@ window.addEventListener("beforeunload", (e) => {
 function buildPalette(){
   const palette = document.getElementById('palette');
   palette.innerHTML = '';
-
   const sections = [
     ['Event Types','eventType'],
     ['Conditions','condition'],
     ['Actions','action'],
     ['Settings','setting'],
   ];
-
   for (const [title, kind] of sections){
     const sec = document.createElement('div');
     sec.className = 'palette-section';
@@ -177,19 +168,27 @@ function buildPalette(){
     });
     palette.appendChild(sec);
   }
-
-  setupDragAndTouch(); // enganchar DnD/touch a los chips creados
+  setupDragAndTouch();
 }
 
-function blockLabel(kind, subtype){ return REGISTRY[kind]?.[subtype]?.label || subtype; }
-function blockClass(kind, subtype){ return REGISTRY[kind]?.[subtype]?.className || 'ev'; }
+/* ---------- Event CRUD (con Action Groups) ---------- */
+function newEventSkeleton(name){
+  return {
+    id: uid(),
+    name,
+    type: null,
+    // condiciones y settings siguen como "blocks" (no-actions)
+    blocks: [],
+    settings: {},
+    // Action Groups vive aparte
+    actionGroups: [
+      { id: uid(), name: 'default', blocks: [] } // grupo default
+    ],
+  };
+}
 
-function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
-
-/* ---------- Event CRUD ---------- */
 document.getElementById('newEventBtn').addEventListener('click', () => {
-  const id = uid();
-  const evt = { id, name: `example${state.events.length+1}`, type: null, blocks: [], settings: {} };
+  const evt = newEventSkeleton(`example${state.events.length+1}`);
   state.events.push(evt);
   render();
 });
@@ -199,6 +198,44 @@ function removeEventCompletely(eventId){
   if (idx === -1) return;
   state.events.splice(idx, 1);
   render();
+}
+
+/* ---------- Action Groups ops ---------- */
+function addActionGroup(eventId, name='group'){
+  const ev = state.events.find(e=>e.id===eventId);
+  if(!ev) return;
+  const base = name === 'default' && ev.actionGroups.some(g=>g.name==='default') ? 'group' : name;
+  ev.actionGroups.push({ id: uid(), name: base, blocks: [] });
+  render();
+}
+
+function removeActionGroup(eventId, groupId){
+  const ev = state.events.find(e=>e.id===eventId);
+  if(!ev) return;
+  if(ev.actionGroups.length<=1) return alert('Debe existir al menos un action group.');
+  const idx = ev.actionGroups.findIndex(g=>g.id===groupId);
+  if(idx<0) return;
+  ev.actionGroups.splice(idx,1);
+  render();
+}
+
+function moveActionGroup(eventId, groupId, dir){
+  const ev = state.events.find(e=>e.id===eventId);
+  if(!ev) return;
+  const i = ev.actionGroups.findIndex(g=>g.id===groupId);
+  const j = i + (dir==='up'?-1:1);
+  if(i<0 || j<0 || j>=ev.actionGroups.length) return;
+  [ev.actionGroups[i], ev.actionGroups[j]] = [ev.actionGroups[j], ev.actionGroups[i]];
+  render();
+}
+
+function renameActionGroup(eventId, groupId, newName){
+  const ev = state.events.find(e=>e.id===eventId);
+  if(!ev) return;
+  const g = ev.actionGroups.find(x=>x.id===groupId);
+  if(!g) return;
+  g.name = newName || 'group';
+  updateYAML();
 }
 
 /* ---------- Drag & Drop (desktop + touch) ---------- */
@@ -242,9 +279,13 @@ function setupDragAndTouch(){
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
     const zone = el?.closest('.zone');
     if(zone){
-      const eventCard = zone.closest('.event-card');
-      const eventId = eventCard?.dataset.eventId;
-      if(eventId){ addBlock(eventId, state.dragData.kind, state.dragData.subtype); }
+      const card = zone.closest('.event-card');
+      const eventId = card?.dataset.eventId;
+      const ztype = zone.dataset.zoneType;
+      const groupId = zone.dataset.groupId || null;
+      if(eventId){
+        addBlock(eventId, state.dragData.kind, state.dragData.subtype, { groupId, zoneType: ztype });
+      }
     }
     touchedChip.classList.remove('dragging');
     document.querySelectorAll('.zone').forEach(z => z.classList.remove('over'));
@@ -257,59 +298,105 @@ function setupDragAndTouch(){
   });
 }
 
-function createZone(ev){
+function createZone(ev, { type, groupId=null, accept }){
   const z = document.createElement('div');
   z.className = 'zone';
-  z.addEventListener('dragover', (e)=>{ e.preventDefault(); e.dataTransfer.dropEffect='copy'; z.classList.add('over'); });
+  z.dataset.zoneType = type;      // 'non-action' | 'action-group'
+  if(groupId) z.dataset.groupId = groupId;
+
+  z.addEventListener('dragover', (e)=>{
+    e.preventDefault();
+    z.classList.add('over');
+    e.dataTransfer.dropEffect='copy';
+  });
   z.addEventListener('dragleave', ()=> z.classList.remove('over'));
   z.addEventListener('drop', (e)=>{
     e.preventDefault(); z.classList.remove('over');
     try {
-      const {kind, subtype} = JSON.parse(e.dataTransfer.getData('application/json'));
-      addBlock(ev.id, kind, subtype);
+      const payload = JSON.parse(e.dataTransfer.getData('application/json'));
+      if(!accept.includes(payload.kind)) return;
+      addBlock(ev.id, payload.kind, payload.subtype, { groupId, zoneType: type });
     } catch(err){ console.warn(err); }
   });
+
   return z;
 }
 
-function addBlock(eventId, kind, subtype){
+/* ---------- Add/Remove/Move blocks ---------- */
+function addBlock(eventId, kind, subtype, opts={}){
   const ev = state.events.find(x=>x.id===eventId);
   if(!ev) return;
+
   if(kind==='eventType'){
     ev.type = subtype;
+  } else if (kind==='action') {
+    // Sólo a grupos
+    let group = null;
+    if(opts.groupId) group = ev.actionGroups.find(g=>g.id===opts.groupId);
+    if(!group){
+      // fallback: default
+      group = ev.actionGroups.find(g=>g.name==='default') || ev.actionGroups[0];
+    }
+    const meta = REGISTRY.action?.[subtype];
+    if(!meta){ console.warn('Unknown action', subtype); return; }
+    group.blocks.push({ id: uid(), kind, subtype, data: deepClone(meta.defaults || {}) });
   } else {
+    // condition / setting permanecen en ev.blocks
     const meta = REGISTRY[kind]?.[subtype];
     if(!meta){ console.warn('Unknown block', kind, subtype); return; }
     ev.blocks.push({ id: uid(), kind, subtype, data: deepClone(meta.defaults || {}) });
   }
+
   render();
 }
 
 function removeBlock(eventId, blockId){
   const ev = state.events.find(x=>x.id===eventId);
   if(!ev) return;
-  ev.blocks = ev.blocks.filter(b=>b.id!==blockId);
-  render();
+  // primero intenta en no-actions
+  const i = ev.blocks.findIndex(b=>b.id===blockId);
+  if(i>=0){ ev.blocks.splice(i,1); render(); return; }
+  // luego en groups
+  for(const g of ev.actionGroups){
+    const j = g.blocks.findIndex(b=>b.id===blockId);
+    if(j>=0){ g.blocks.splice(j,1); render(); return; }
+  }
 }
 
 function moveBlock(eventId, blockId, dir){
   const ev = state.events.find(x=>x.id===eventId);
   if(!ev) return;
   const i = ev.blocks.findIndex(b=>b.id===blockId);
+  if(i<0) return;
   const j = i + (dir==='up'?-1:1);
-  if(i<0 || j<0 || j>=ev.blocks.length) return;
+  if(j<0 || j>=ev.blocks.length) return;
   [ev.blocks[i], ev.blocks[j]] = [ev.blocks[j], ev.blocks[i]];
   render();
 }
 
+function moveAction(eventId, groupId, blockId, dir){
+  const ev = state.events.find(x=>x.id===eventId);
+  const g  = ev?.actionGroups.find(gg=>gg.id===groupId);
+  if(!g) return;
+  const i = g.blocks.findIndex(b=>b.id===blockId);
+  const j = i + (dir==='up'?-1:1);
+  if(i<0 || j<0 || j>=g.blocks.length) return;
+  [g.blocks[i], g.blocks[j]] = [g.blocks[j], g.blocks[i]];
+  render();
+}
+
 /* ---------- Render ---------- */
+function blockClass(kind, subtype){ return REGISTRY[kind]?.[subtype]?.className || 'ev'; }
+
 function render(){
   canvas.innerHTML = '';
+
   state.events.forEach(ev => {
     const card = document.createElement('div');
     card.className = 'event-card';
     card.dataset.eventId = ev.id;
 
+    // header
     const head = document.createElement('div');
     head.className = 'event-top';
     head.innerHTML = `
@@ -324,12 +411,13 @@ function render(){
     head.querySelector('.event-name').addEventListener('input', (e)=>{ ev.name = e.target.value; updateYAML(); });
     card.appendChild(head);
 
-    const zone = createZone(ev);
-
-    ev.blocks.forEach(b => {
-      const meta = REGISTRY[b.kind]?.[b.subtype];
+    // sección no-actions (conditions + settings)
+    const nonActionZone = createZone(ev, { type:'non-action', accept:['condition','setting','eventType']});
+    // pintar los no-actions
+    ev.blocks.forEach(b=>{
+      const meta  = REGISTRY[b.kind]?.[b.subtype];
       const block = document.createElement('div');
-      block.className = `block ${blockClass(b.kind, b.subtype)}`;
+      block.className = `block ${blockClass(b.kind,b.subtype)}`;
       const title = meta?.label || b.subtype;
       block.innerHTML = `<div class="block-head">
           <div>${title}</div>
@@ -339,36 +427,125 @@ function render(){
             <button class="icon-btn" title="Eliminar">🗑</button>
           </div>
         </div>`;
-
       const body = document.createElement('div');
       body.className = 'block-body';
-      // Render específico desde el registry
       meta?.render?.(body, b, updateYAML);
       block.appendChild(body);
-
       const [up,down,del] = block.querySelectorAll('.icon-btn');
       up.addEventListener("click", ()=>moveBlock(ev.id,b.id,'up'));
       down.addEventListener("click", ()=>moveBlock(ev.id,b.id,'down'));
       del.addEventListener("click", ()=>removeBlock(ev.id,b.id));
-
-      zone.appendChild(block);
+      nonActionZone.appendChild(block);
     });
 
-    const dropHelp = document.createElement('div');
-    dropHelp.style.opacity = .7;
-    dropHelp.style.fontSize = '12px';
-    dropHelp.style.marginTop = '6px';
-    dropHelp.textContent = 'Arrastra más bloques aquí…';
-    zone.appendChild(dropHelp);
+    const nonActionWrap = document.createElement('div');
+    nonActionWrap.style.margin = '10px 12px';
+    nonActionWrap.prepend(Object.assign(document.createElement('div'), {
+      className:'palette-title',
+      textContent:'Conditions & Settings'
+    }));
+    // hint
+    const hintNA = document.createElement('div');
+    hintNA.style.opacity = '.7';
+    hintNA.style.fontSize = '12px';
+    hintNA.style.marginTop = '6px';
+    hintNA.textContent = 'Arrastra condiciones o settings aquí…';
+    nonActionZone.appendChild(hintNA);
+    nonActionWrap.appendChild(nonActionZone);
+    card.appendChild(nonActionWrap);
 
-    card.appendChild(zone);
+    // sección Action Groups
+    const groupsHeader = document.createElement('div');
+    groupsHeader.className = 'builder-header';
+    groupsHeader.style.borderTop = '1px solid var(--border)';
+    groupsHeader.innerHTML = `
+      <div style="font-weight:700">Action Groups</div>
+      <div class="builder-actions">
+        <button class="btn" title="Añadir action group">+ Add Group</button>
+      </div>`;
+    groupsHeader.querySelector('.btn').addEventListener('click', ()=>addActionGroup(ev.id, 'group'));
+    card.appendChild(groupsHeader);
+
+    // pintar cada group
+    ev.actionGroups.forEach((g, idx)=>{
+      const groupCard = document.createElement('div');
+      groupCard.className = 'block';
+      groupCard.style.margin = '10px 12px';
+
+      const head = document.createElement('div');
+      head.className = 'block-head';
+      head.style.background = 'color-mix(in oklab, var(--msg) 18%, #0a0d16)';
+      head.innerHTML = `
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div style="font-weight:700">Group:</div>
+          <input class="group-name" value="${g.name}" title="Nombre del action group"/>
+        </div>
+        <div class="tools">
+          <button class="icon-btn" title="Subir grupo">▲</button>
+          <button class="icon-btn" title="Bajar grupo">▼</button>
+          <button class="icon-btn danger" title="Eliminar grupo">🗑</button>
+        </div>`;
+      const [btnUp, btnDown, btnDel] = head.querySelectorAll('.icon-btn');
+      head.querySelector('input').addEventListener('input', e=>renameActionGroup(ev.id, g.id, e.target.value));
+      btnUp.addEventListener('click', ()=>moveActionGroup(ev.id, g.id, 'up'));
+      btnDown.addEventListener('click', ()=>moveActionGroup(ev.id, g.id, 'down'));
+      btnDel.addEventListener('click', ()=>{
+        if(confirm(`¿Eliminar el grupo "${g.name}"?`)) removeActionGroup(ev.id, g.id);
+      });
+      groupCard.appendChild(head);
+
+      const zone = createZone(ev, { type:'action-group', groupId:g.id, accept:['action'] });
+      // acciones dentro del group
+      g.blocks.forEach(b=>{
+        const meta  = REGISTRY.action?.[b.subtype];
+        const block = document.createElement('div');
+        block.className = `block ${blockClass(b.kind,b.subtype)}`;
+        const title = meta?.label || b.subtype;
+        block.innerHTML = `<div class="block-head">
+            <div>${title}</div>
+            <div class="tools">
+              <button class="icon-btn" title="Subir">▲</button>
+              <button class="icon-btn" title="Bajar">▼</button>
+              <button class="icon-btn" title="Eliminar">🗑</button>
+            </div>
+          </div>`;
+        const body = document.createElement('div');
+        body.className = 'block-body';
+        meta?.render?.(body, b, updateYAML);
+        block.appendChild(body);
+        const [up,down,del] = block.querySelectorAll('.icon-btn');
+        up.addEventListener("click",   ()=>moveAction(ev.id,g.id,b.id,'up'));
+        down.addEventListener("click", ()=>moveAction(ev.id,g.id,b.id,'down'));
+        del.addEventListener("click",  ()=>{ 
+          const gg = ev.actionGroups.find(x=>x.id===g.id);
+          const i = gg.blocks.findIndex(x=>x.id===b.id);
+          if(i>=0){ gg.blocks.splice(i,1); render(); }
+        });
+        zone.appendChild(block);
+      });
+      // hint
+      const hint = document.createElement('div');
+      hint.style.opacity = '.7';
+      hint.style.fontSize = '12px';
+      hint.style.marginTop = '6px';
+      hint.textContent = 'Arrastra acciones aquí…';
+      zone.appendChild(hint);
+
+      const bodyWrap = document.createElement('div');
+      bodyWrap.className = 'block-body';
+      bodyWrap.appendChild(zone);
+      groupCard.appendChild(bodyWrap);
+
+      card.appendChild(groupCard);
+    });
+
     canvas.appendChild(card);
   });
 
   updateYAML();
 }
 
-/* ---------- YAML ---------- */
+/* ---------- YAML (con múltiples action groups) ---------- */
 function buildYAML(){
   const lines = [];
   lines.push('events:');
@@ -377,20 +554,20 @@ function buildYAML(){
     lines.push(`  ${ename}:`);
     lines.push(`    type: ${ev.type || 'repetitive'}`);
 
-    // settings
+    // settings desde blocks (kind=setting)
     const settings = {};
     ev.blocks.forEach(b=>{
       const meta = REGISTRY[b.kind]?.[b.subtype];
       if(meta?.settingKey){
-        settings[meta.settingKey] = ('ticks' in b.data) ? b.data.ticks
-                             : ('perm' in b.data) ? b.data.perm
-                             : b.data;
+        settings[meta.settingKey] =
+          ('ticks' in b.data) ? b.data.ticks :
+          ('perm'  in b.data) ? b.data.perm  : b.data;
       }
     });
     if(settings.repetitive_time !== undefined) lines.push(`    repetitive_time: ${settings.repetitive_time}`);
     if(settings.ignore_with_permission)       lines.push(`    ignore_with_permission: ${settings.ignore_with_permission}`);
 
-    // conditions
+    // conditions (desde blocks)
     const conds = ev.blocks.filter(b=>b.kind==='condition').map(b=>{
       const meta = REGISTRY.condition[b.subtype];
       return meta?.toYAML ? meta.toYAML(b) : `'TODO condition'`;
@@ -400,16 +577,26 @@ function buildYAML(){
       conds.forEach(c => lines.push(`      - ${c}`));
     }
 
-    // actions
-    const acts = ev.blocks.filter(b=>b.kind==='action').map(b=>{
-      const meta = REGISTRY.action[b.subtype];
-      return meta?.toYAML ? meta.toYAML(b) : `'message: TODO'`;
-    });
-
+    // actions (por grupos)
     lines.push('    actions:');
-    lines.push('      default:');
-    if(acts.length) acts.forEach(a => lines.push(`      - ${a}`));
-    else lines.push('      - "message: &7No actions configured."');
+    if(!ev.actionGroups.length){
+      lines.push('      default:');
+      lines.push('      - "message: &7No actions configured."');
+    } else {
+      ev.actionGroups.forEach(g=>{
+        const key = slugKey(g.name);
+        lines.push(`      ${key}:`);
+        if(g.blocks.length){
+          g.blocks.forEach(b=>{
+            const meta = REGISTRY.action[b.subtype];
+            const s = meta?.toYAML ? meta.toYAML(b) : `'message: TODO'`;
+            lines.push(`      - ${s}`);
+          });
+        } else {
+          lines.push('      - "message: &7No actions configured."');
+        }
+      });
+    }
   });
   return lines.join('\n');
 }
@@ -464,12 +651,28 @@ function updateScreenGuard(){
 window.addEventListener('resize', updateScreenGuard);
 window.addEventListener('orientationchange', updateScreenGuard);
 
+/* ---------- Watermark sólo en export ---------- */
+const WATERMARK_ENABLED = true;
+const WATERMARK_TEXT = () =>
+  `# Generated with Conditional Events Visual Builder\n` +
+  `# Source: https://utility.mxvd.me/cevisualbuilder\n` +
+  `# Timestamp: ${new Date().toISOString().slice(0,10)} - ${new Date().toTimeString().slice(0,8)}`;
+
+function getYAMLForExport() {
+  const base = buildYAML();
+  return WATERMARK_ENABLED ? `${base}\n\n${WATERMARK_TEXT()}` : base;
+}
+
 /* ---------- Copy / Download ---------- */
 document.getElementById('copyBtn').addEventListener('click', async ()=>{
-  try{ await navigator.clipboard.writeText(ymlOut.textContent); alert('YAML copiado ✅'); }catch(e){ alert('No se pudo copiar'); }
+  try{
+    await navigator.clipboard.writeText(getYAMLForExport());
+    alert('YAML copiado ✅');
+  }catch(e){ alert('No se pudo copiar'); }
 });
 document.getElementById('downloadBtn').addEventListener('click', ()=>{
-  const blob = new Blob([ymlOut.textContent], {type:'text/yaml'});
+  const out = getYAMLForExport();
+  const blob = new Blob([out], {type:'text/yaml'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'events.yml';
@@ -477,12 +680,11 @@ document.getElementById('downloadBtn').addEventListener('click', ()=>{
 });
 
 /* ---------- Boot ---------- */
-buildPalette();                  // genera los chips desde REGISTRY
-document.getElementById('newEventBtn').click(); // seed
+buildPalette();
+document.getElementById('newEventBtn').click();
 const first = state.events[0].id;
 addBlock(first,'eventType','block_interact');
 addBlock(first,'condition','basic_condition');
-addBlock(first,'condition','basic_condition');
-addBlock(first,'action','send_message');
+addBlock(first,'action','send_message', { zoneType:'action-group' }); // cae en default
 applyResponsiveYAML();
 updateScreenGuard();

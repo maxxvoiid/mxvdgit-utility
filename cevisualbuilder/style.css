@@ -101,6 +101,8 @@ html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text);
   gap: 8px;
 }
 
+.group-name { background: rgba(0,0,0,.24); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; color: #fff; width: 100%; font-weight: 700; }
+
 /* botón rojo pequeñito */
 .icon-btn.danger {
   background: color-mix(in oklab, var(--danger) 30%, #0a0d16);
