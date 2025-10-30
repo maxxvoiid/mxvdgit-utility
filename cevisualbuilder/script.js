@@ -143,6 +143,14 @@ const REGISTRY = {
 };
 
 /* ---------- Helpers ---------- */
+window.addEventListener("beforeunload", (e) => {
+  if (state.events.length > 0) {
+    e.preventDefault();
+    e.returnValue = "Si recargas la página, perderás todos los datos del builder.";
+    return e.returnValue;
+  }
+});
+
 function buildPalette(){
   const palette = document.getElementById('palette');
   palette.innerHTML = '';
