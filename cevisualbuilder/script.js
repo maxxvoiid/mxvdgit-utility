@@ -1632,6 +1632,20 @@ function renderEventCompatibilityNotice(allowed, ctx, {style='code'} = {}) {
   return wrap;
 }
 
+function renderMissingEventTypeNotice(){
+  const wrap = document.createElement('div');
+  wrap.className = 'notice error';
+  wrap.style.margin = '12px';
+  wrap.innerHTML = `
+    <div class="icon" aria-hidden="true">${ICONS.alert}</div>
+    <div class="content">
+      This event has no trigger assigned yet. Drag an Event chip from the palette into the top area.
+      Until then, its conditions and actions will never run.
+    </div>
+  `;
+  return wrap;
+}
+
 let paletteObserver = null;
 
 function buildPaletteNav(){
@@ -2159,6 +2173,10 @@ function render(){
     head.querySelector('.event-name').addEventListener('input', (e)=>{ ev.name = e.target.value; updateYAML(); });
     card.appendChild(head);
 
+    if (!ev.type) {
+      card.appendChild(renderMissingEventTypeNotice());
+    }
+
     // sección no-actions (conditions + settings)
     const nonActionZone = createZone(ev, { 
       type: 'non-action', 
@@ -2312,7 +2330,7 @@ function buildYAML(){
   state.events.forEach(ev => {
     const ename = (ev.name||'event').replace(/:/g,'').trim() || 'event';
     lines.push(`  ${ename}:`);
-    lines.push(`    type: ${ev.type || 'repetitive'}`);
+    lines.push(`    type: ${ev.type || 'null'}`);
 
     // settings desde blocks (kind=setting)
     const settings = {};
