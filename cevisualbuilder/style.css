@@ -67,11 +67,11 @@ html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text);
   background: var(--card); 
   margin: 6px 4px; 
   width: calc(100% - 8px);
-  touch-action: none;
+  touch-action: pan-y;
   font-weight: 600;
 }
 .chip:hover { transform: translateY(-1px); }
-.chip.dragging { opacity: 0.5; transform: scale(0.95); }
+.chip.dragging { opacity: 0.5; transform: scale(0.95); touch-action: none; }
 .chip small { opacity: .8; font-size: 12px; }
 .chip.ev { background: color-mix(in oklab, var(--ev) 18%, #0a0d16); }
 .chip.cond { background: color-mix(in oklab, var(--cond) 25%, #0a0d16); }
@@ -228,6 +228,8 @@ footer a:visited {
 #palette{
   overflow: auto;
   scroll-behavior: smooth; /* scroll suave al navegar por secciones */
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* barra vertical tipo Scratch */
@@ -278,3 +280,29 @@ footer a:visited {
   .palette-nav .dot{ width: 22px; height: 22px; }
   .palette-nav button{ font-size: 10px; }
 }
+
+.no-select { user-select: none; -webkit-user-select: none; }
+
+.notice{
+  --ink:#facc15;                 /* color del aviso (ámbar por defecto) */
+  display:flex; gap:10px; align-items:flex-start;
+  padding:10px 12px; border-radius:12px;
+  background: color-mix(in oklab, var(--ink) 10%, #0a0d16);
+  border:1px solid color-mix(in oklab, var(--ink) 35%, transparent);
+  color: var(--ink); font-size:13px; line-height:1.35;
+}
+/* icono dentro del notice */
+.notice .icon{
+  width: 18px; height: 18px;
+  display:inline-flex; align-items:center; justify-content:center;
+  margin-top: 1px; flex:0 0 auto;
+}
+/* el SVG hereda el color del banner vía currentColor */
+.notice .icon svg{
+  width: 20px; height: 20px;
+  stroke: currentColor; fill: none;
+}
+
+.notice strong{ color:var(--ink); }
+.notice.warn{ --ink:#facc15; }   /* ámbar */
+.notice.error{ --ink:#f87171; }  /* rojo cuando NO aplica */

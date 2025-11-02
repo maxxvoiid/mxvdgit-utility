@@ -12,10 +12,17 @@ const yamlShowBtn = document.getElementById('yamlShowBtn');
 const MIN_WIDTH = 980;
 document.getElementById('minWidthText').textContent = MIN_WIDTH + ' px';
 
+const isActionKind = (k) => k === 'action' || /^actions?/i.test(k);
+const ACTION_KINDS = () => Object.keys(REGISTRY).filter(isActionKind);
+const getActionMeta = (kind, subtype) => REGISTRY[kind]?.[subtype] || null;
+const isEventKind = (k) => k === 'eventType' || /^event.+Type$/.test(k);
 const uid  = () => Math.random().toString(36).slice(2, 9);
 const escQ = s => String(s ?? '').replace(/'/g, "''");
 const deepClone = o => JSON.parse(JSON.stringify(o));
 const slugKey = s => String(s||'').trim().toLowerCase().replace(/[^a-z0-9_-]+/g,'_') || 'group';
+
+const LONG_PRESS_MS = 200;
+const MOVE_TOLERANCE = 12; // px de "touch slop" para distinguir scroll de drag
 
 /* ---------- REGISTRY (igual que el tuyo; puedes editar aquí para añadir bloques) ---------- */
 const REGISTRY = {
@@ -95,7 +102,7 @@ const REGISTRY = {
       label:'Add Condition',
       className:'cond',
       defaults: { left:'%block%', op:'==', right:'STONE_BUTTON' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `
           <div class="row">
             <input type="text" value="${block.data.left}" title="Variable/placeholder (ej: %block%)" />
@@ -136,8 +143,8 @@ const REGISTRY = {
     __meta: { label: 'Actions', color: 'var(--msg)' },
     send_message: {
       label:'Send Message', className:'msg',
-      defaults:{ text:'Mensaje aquí…' },
-      render(body, block, update){
+      defaults:{ text:'Enter your message here...' },
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Sends a message to the player.
           </small>
@@ -148,8 +155,8 @@ const REGISTRY = {
     },
     send_centered_message: {
       label:'Send Centered Message', className:'msg',
-      defaults:{ text:'Mensaje aquí…' },
-      render(body, block, update){
+      defaults:{ text:'Enter your message here...' },
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Sends a centered message to the player.
           </small>
@@ -160,8 +167,8 @@ const REGISTRY = {
     },
     send_console_message: {
       label:'Send Console Message', className:'msg',
-      defaults:{ text:'Mensaje aquí…' },
-      render(body, block, update){
+      defaults:{ text:'Enter your message here...' },
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Sends a message to the console.
           </small>
@@ -172,8 +179,8 @@ const REGISTRY = {
     },
     send_json_message: {
       label: 'Send JSON Message', className: 'msg',
-      defaults: { text: 'Mensaje aquí…' },
-      render(body, block, update) {
+      defaults: { text: 'Enter your message here...' },
+      render(body, block, update, ctx) {
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Sends a JSON message to the player. These messages allows you to add click and hover events.
           </small>
@@ -211,8 +218,8 @@ const REGISTRY = {
     },
     send_mini_message: {
       label:'Send Mini Message (Paper 1.19.4+)', className:'msg',
-      defaults:{ text:'Mensaje aquí…' },
-      render(body, block, update){
+      defaults:{ text:'Enter your message here...' },
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Sends a message in the Mini Message format to the player.
           </small>
@@ -224,7 +231,7 @@ const REGISTRY = {
     console_command: {
       label:'Console Command', className:'cmd',
       defaults:{ cmd:'say Hello' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Executes a command from the console.
           </small>
@@ -236,7 +243,7 @@ const REGISTRY = {
     player_command: {
       label:'Player Command', className:'cmd',
       defaults:{ cmd:'say Hello' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Executes a command from the player.
           </small>
@@ -248,7 +255,7 @@ const REGISTRY = {
     player_command_as_op: {
       label:'Player Command as Op', className:'cmd',
       defaults:{ cmd:'say Hello' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Executes a command from the player as OP. (Not recommended)
           </small>
@@ -260,7 +267,7 @@ const REGISTRY = {
     player_send_chat: {
       label:'Player Send Chat', className:'msg',
       defaults:{ cmd:'Hello!' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Sends a message in chat from the player. You can even execute a command that is not registered.
           </small>
@@ -272,11 +279,11 @@ const REGISTRY = {
     teleport: {
       label:'Teleport', className:'fx',
       defaults:{ cmd:'lobby;0;60;0;90;0' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Teleports the player/entity. Use this format: "world;x;y;z;yaw;pitch"
-          </small>
-          <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
+          Teleports the player/entity. Use this format: <code>world;x;y;z;yaw;pitch</code>
+        </small>
+        <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
       toYAML(block){ return `'teleport: ${escQ(block.data.cmd)}'`; }
@@ -284,7 +291,7 @@ const REGISTRY = {
     give_potion_effect: {
       label:'Give Potion Effect', className:'heal',
       defaults:{ cmd:'POISON;120;1;false' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Gives a potion effect to the player/entity. Use this format: "effect;duration_in_ticks;level;show_particles;show_icon"
           </small>
@@ -296,7 +303,7 @@ const REGISTRY = {
     remove_potion_effect: {
       label:'Remove Potion Effect', className:'heal',
       defaults:{ cmd:'POISON' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Removes a potion effect from the player/entity. Use "all" to remove all potion effects.
           </small>
@@ -308,7 +315,7 @@ const REGISTRY = {
     cancel_event: {
       label:'Cancel Event', className:'danger',
       defaults:{ value:true },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Whether event should be cancelled or not.
           </small>
@@ -326,7 +333,7 @@ const REGISTRY = {
     kick: {
       label:'Kick Player', className:'danger',
       defaults:{ reason:'&cWhat are you trying to do?' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Kicks the players from the server.
           </small>
@@ -338,7 +345,7 @@ const REGISTRY = {
     playsound: {
       label:'Play Sound', className:'fx',
       defaults:{ cmd:'BLOCK_NOTE_BLOCK_PLING;10;2;100,60,-127,world' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Plays a sound to the player. Use this format: "sound;volume;pitch;(optional, location)<x>,<y>,<z>,<world>"
           </small>
@@ -350,7 +357,7 @@ const REGISTRY = {
     playsound_resource_pack: {
       label:'Play Sound Resource Pack', className:'fx',
       defaults:{ cmd:'my_custom_sound;10;2;100,60,-127,world' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Plays a resource pack sound to the player. The format is the same as playsound action.
           </small>
@@ -362,7 +369,7 @@ const REGISTRY = {
     stopsound: {
       label:'Stop Sound (1.10+)', className:'fx',
       defaults:{ cmd:'BLOCK_NOTE_BLOCK_PLING' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Stops a sound for a player. 
               Use "<sound>" for specific sound. Only works on 1.10+.
@@ -376,7 +383,7 @@ const REGISTRY = {
     stopsound_resource_pack: {
       label:'Stop Sound Resource Pack (1.10+)', className:'fx',
       defaults:{ cmd:'scorpions:custom.test' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Stops a resource pack sound for a player.
           </small>
@@ -389,7 +396,7 @@ const REGISTRY = {
       label: 'Set Gamemode',
       className: 'cmd',
       defaults: { mode: 'SURVIVAL' },
-      render(body, block, update) {
+      render(body, block, update, ctx) {
         body.innerHTML = `
           <small style="opacity:1;font-size:14px">
               Sets a gamemode for the player.
@@ -416,7 +423,7 @@ const REGISTRY = {
     send_to_server: {
       label:'Send to Server', className:'cmd',
       defaults:{ cmd:'lobby' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Sends the player to a bungee server.
           </small>
@@ -428,7 +435,7 @@ const REGISTRY = {
     actionbar: {
       label:'Actionbar', className:'msg',
       defaults:{ cmd:'&6Welcome to the server;120' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Sends an actionbar message to the player. Use this format: "message;duration" (The duration must be in ticks) On repetitive events, use a time of 0 for no flickering.
           </small>
@@ -443,7 +450,7 @@ const REGISTRY = {
     title: {
       label:'Title', className:'msg',
       defaults:{ cmd:'20;40;20;&6This is a title;none' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Sends a title and subtitle message to the player. Use this format: "fadeIn;stay;fadeOut;title;subtitle" (The duration of fadeIn, stay and fadeOut must be in ticks) If you want just a title, or just subtitle write "none"
           </small>
@@ -458,7 +465,7 @@ const REGISTRY = {
     damage: {
       label:'Damage', className:'danger',
       defaults:{ point:5 },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Damages the player/entity a specific amount.
           </small>
@@ -475,7 +482,7 @@ const REGISTRY = {
     set_on_fire: {
       label:'Set On Fire', className:'danger',
       defaults:{ ticks:60 },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Sets the player/entity on fire for a certain duration in ticks.
           </small>
@@ -492,7 +499,7 @@ const REGISTRY = {
     freeze: {
       label:'Freeze (1.17+)', className:'fx',
       defaults:{ ticks:300 },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Freezes the player/entity for a certain duration in ticks.
           </small>
@@ -509,7 +516,7 @@ const REGISTRY = {
     heal: {
       label:'Heal', className:'heal',
       defaults:{ point:5 },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Heals the player/entity a specific amount.
           </small>
@@ -526,7 +533,7 @@ const REGISTRY = {
     set_food_level: {
       label:'Set Food Level', className:'heal',
       defaults:{ point:20 },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Sets the current food level of the player with a specific amount.
           </small>
@@ -543,7 +550,7 @@ const REGISTRY = {
     throw_directional: {
       label:'Throw Directional', className:'fx',
       defaults:{ point:2 },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Will throw players toward the direction they are looking at, with a certain strength (impulse).
           </small>
@@ -557,10 +564,11 @@ const REGISTRY = {
     throw_coordinate: {
       label:'Throw Coordinate', className:'fx',
       defaults:{ cmd:'-1;0;-1' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Similar to Throw Directional. In this case, players will be throwed following the strength defined in each coordinate. Use this format: "<strength_x>;<strength_y>;<strength_z>"
-          </small>
+          Similar to Throw Directional. Players will be thrown with a defined strength. 
+          Use this format: <code>&lt;strength_x&gt;;&lt;strength_y&gt;;&lt;strength_z&gt;</code>
+        </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
@@ -597,7 +605,7 @@ const REGISTRY = {
     wait: {
       label:'Wait', className:'flow',
       defaults:{ point:1 },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Waits X amount of seconds before executing more actions.
           </small>
@@ -611,7 +619,7 @@ const REGISTRY = {
     wait_ticks: {
       label:'Wait Ticks', className:'flow',
       defaults:{ point:20 },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
               Waits X amount of ticks before executing more actions.
           </small>
@@ -628,10 +636,11 @@ const REGISTRY = {
     remove_item: {
       label:'Remove Item', className:'cmd',
       defaults:{ cmd:'DIAMOND;5;name: Unique Diamond' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Removes X amount of items from the player inventory. Use this format: "<type>;<amount>;datavalue: <datavalue>;name: <name>;lorecontains: <lore_line>"
-          </small>
+          Removes X amount of items. Use this format: 
+          <code>&lt;type&gt;;&lt;amount&gt;;datavalue:&lt;datavalue&gt;;name:&lt;name&gt;;lorecontains:&lt;lore_line&gt;</code>
+        </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
@@ -640,10 +649,10 @@ const REGISTRY = {
     remove_item_slot: {
       label:'Remove Item Slot', className:'cmd',
       defaults:{ cmd:'HAND;1' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Removes X amount of items from a certain slot of the player inventory. Use this format: "<slot>;<amount>"
-          </small>
+          Removes items from a slot. Use this format: <code>&lt;slot&gt;;&lt;amount&gt;</code>
+        </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
@@ -652,10 +661,11 @@ const REGISTRY = {
     firework: {
       label:'Firework', className:'fx',
       defaults:{ cmd:'colors:YELLOW,RED type:BALL fade:AQUA power:0' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Spawns a firework from the player/entity location. Use this format: "colors:<color1>,<color2> type:<type> fade:<color1>,<color2> <propertyN>:<valueN>"
-          </small>
+          Spawns a firework. Use this format: 
+          <code>colors:&lt;color1&gt;,&lt;color2&gt; type:&lt;type&gt; fade:&lt;color1&gt;,&lt;color2&gt; &lt;propertyN&gt;:&lt;valueN&gt;</code>
+        </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
@@ -664,10 +674,10 @@ const REGISTRY = {
     lightning_strike: {
       label:'Lightning Strike', className:'fx',
       defaults:{ cmd:'%victim_block_world%;%victim_block_x%;%victim_block_y%;%victim_block_z%' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Generates a lightning strike effect that does no damage, at certain location. Use this format: "<world>;<x>;<y>;<z>"
-          </small>
+          Generates a lightning strike. Use this format: <code>&lt;world&gt;;&lt;x&gt;;&lt;y&gt;;&lt;z&gt;</code>
+        </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
@@ -676,10 +686,11 @@ const REGISTRY = {
     particle: {
       label:'Particle (1.9+)', className:'fx',
       defaults:{ cmd:'effect:EXPLOSION_LARGE offset:0.1;0.1;0.1 speed:1 amount:5 for_player:true' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Spawns a particle on the player/entity location. Use this format: "effect:<effect_name> offset:<x>;<y>;<z> speed:<speed> amount:<amount> force:<true/false>"
-          </small>
+          Spawns a particle. Use this format: 
+          <code>effect:&lt;effect_name&gt; offset:&lt;x&gt;;&lt;y&gt;;&lt;z&gt; speed:&lt;speed&gt; amount:&lt;amount&gt; force:&lt;true/false&gt;</code>
+        </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
@@ -688,10 +699,10 @@ const REGISTRY = {
     give_item: {
       label:'Give Item', className:'heal',
       defaults:{ cmd:'id:IRON_HELMET;amount:1;name:&6Basic Helmet' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Gives an item to the player. Use this format: "id:<id>;<property>:<value>;<propertyN>:<valueN>"
-          </small>
+          Gives an item. Use this format: <code>id:&lt;id&gt;;&lt;property&gt;:&lt;value&gt;;&lt;propertyN&gt;:&lt;valueN&gt;</code>
+        </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
@@ -700,10 +711,11 @@ const REGISTRY = {
     drop_item: {
       label:'Drop Item', className:'heal',
       defaults:{ cmd:'location:%block_x%,%block_y%,%block_z%,%block_world%;id:DIAMOND;name:&bUnique Diamond' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Drops an item in a certain location. Use this format: "location:<x>,<y>,<z>,<world>;id:<id>;<property>:<value>;<propertyN>:<valueN>"
-          </small>
+          Drops an item. Use this format: 
+          <code>location:&lt;x&gt;,&lt;y&gt;,&lt;z&gt;,&lt;world&gt;;id:&lt;id&gt;;&lt;property&gt;:&lt;value&gt;;&lt;propertyN&gt;:&lt;valueN&gt;</code>
+        </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
@@ -712,10 +724,11 @@ const REGISTRY = {
     set_block: {
       label:'Set Block (1.13+)', className:'cmd',
       defaults:{ cmd:'location:50,50,-256,world;id:DIAMOND_BLOCK' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Places a block in a certain location. Use this format: "location:<x>,<y>,<z>,<world>;id:<id>;block_data:<block_data>"
-          </small>
+          Places a block. Use this format: 
+          <code>location:&lt;x&gt;,&lt;y&gt;,&lt;z&gt;,&lt;world&gt;;id:&lt;id&gt;;block_data:&lt;block_data&gt;</code>
+        </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
@@ -724,10 +737,11 @@ const REGISTRY = {
     summon: {
       label:'Summon', className:'fx',
       defaults:{ cmd:'location:0,68,0,spawn;entity:SHEEP' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Spawns an entity at a certain location. Use this format: "location:<x>,<y>,<z>,<world>;entity:<entity>;<property>:<value>;<propertyN>:<valueN>"
-          </small>
+          Spawns an entity. Use this format: 
+          <code>location:&lt;x&gt;,&lt;y&gt;,&lt;z&gt;,&lt;world&gt;;entity:&lt;entity&gt;;&lt;property&gt;:&lt;value&gt;;&lt;propertyN&gt;:&lt;valueN&gt;</code>
+        </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
@@ -736,10 +750,10 @@ const REGISTRY = {
     call_event: {
       label:'Call Event', className:'flow',
       defaults:{ cmd:'example2;%example_variable%=Something' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Executes a "call" event. Use this format: "<event_name>;%variable1%=<value1>;%variableN%=<valueN>"
-          </small>
+          Executes another event. Use this format: <code>&lt;event_name&gt;;%variable1%=&lt;value1&gt;;&lt;variableN&gt;=&lt;valueN&gt;</code>
+        </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
@@ -748,24 +762,27 @@ const REGISTRY = {
     execute_action_group: {
       label:'Execute Action Group', className:'flow',
       defaults:{ cmd:'firework1:70;firework2:30;firework3:30' },
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<small style="opacity:1;font-size:14px">
-              Executes another action group from the event, randomly. Use this format: <group1>:<prob1>;<groupN>:<probN> where <group> is the name of a created action group of the event, and <probability> is the chance of selecting the event (The probabilities don't need to sum 100%).
-          </small>
+          Executes an action group randomly. Use this format: 
+          <code>&lt;group1&gt;:&lt;prob1&gt;;&lt;groupN&gt;:&lt;probN&gt;</code>
+        </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
       toYAML(block){ return `'execute_action_group: ${escQ(block.data.cmd)}'`; }
     },
+  },
 
-    to_target: {
-      label:'To Target → (drop one action)', className:'msg',
+  actionTo: {
+    __meta: { label: '"To" Actions', color: 'var(--msg)' },
+    to_all: {
+      label:'To All', className:'flow',
       defaults:{ child: null }, // child: { subtype, data, id? }
       render(body, block, update, ctx){
         body.innerHTML = `
           <small style="opacity:1;font-size:14px;display:block;margin-bottom:8px">
-            Arrastra <b>una</b> acción aquí. Se ejecutará contra el <code>target</code>.
-            Puedes editar sus argumentos como si estuviera fuera.
+            Drag an action here. It will execute the action for all players on the server.
           </small>
         `;
 
@@ -774,7 +791,7 @@ const REGISTRY = {
           type: 'to-slot',
           groupId: ctx.groupId,
           parentBlockId: block.id,
-          accept: ['action']
+          accept: ['action', 'actionEvent']
         });
         replaceZone.style.padding = '0';
         replaceZone.style.border = '2px dashed rgba(255,255,255,.08)';
@@ -786,7 +803,9 @@ const REGISTRY = {
 
         if (block.data.child) {
           const inner = block.data.child;
-          const meta  = REGISTRY.action?.[inner.subtype];
+
+          const innerKind = inner.kind || ACTION_KINDS().find(k => REGISTRY[k]?.[inner.subtype]) || 'action';
+          const meta = REGISTRY[innerKind]?.[inner.subtype];
 
           // Bloque interno con el MISMO diseño
           const innerBlock = document.createElement('div');
@@ -830,7 +849,102 @@ const REGISTRY = {
           hint.style.opacity = '.7';
           hint.style.fontSize = '12px';
           hint.style.padding = '12px';
-          hint.textContent = 'Suelta aquí una acción (message, title, playsound, give_item, …)';
+          hint.textContent = 'Drop an action here (message, title, playsound, give_item, ...)';
+          replaceZone.appendChild(hint);
+        }
+
+        body.appendChild(replaceZone);
+      },
+      toYAML(block){
+        if (!block.data.child) {
+          return `'to_all: message: &7(No inner action)'`;
+        }
+        const inner = block.data.child;
+        const innerKind = inner.kind || ACTION_KINDS().find(k => REGISTRY[k]?.[inner.subtype]) || 'action';
+        const meta = REGISTRY[innerKind]?.[inner.subtype];
+        if (!meta || typeof meta.toYAML !== 'function') {
+          return `'to_all: message: &7(Unsupported inner action)'`;
+        }
+        // Reusa el toYAML del action hijo y quita comillas externas
+        const innerLine = meta.toYAML({ kind:'action', subtype: inner.subtype, data: inner.data }) || "'message: TODO'";
+        const unquoted  = innerLine.replace(/^'(.*)'$/, '$1');
+        return `'to_all: ${unquoted}'`;
+      }
+    },
+    to_target: {
+      label:'To Target', className:'flow',
+      defaults:{ child: null }, // child: { subtype, data, id? }
+      render(body, block, update, ctx){
+        body.innerHTML = `
+          <small style="opacity:1;font-size:14px;display:block;margin-bottom:8px">
+            Drag an action here. It will execute the action for the target of the event.
+          </small>
+        `;
+
+        // Zona de reemplazo que cubre todo el contenido (permite drop para reemplazar)
+        const replaceZone = createZone(ctx.event, {
+          type: 'to-slot',
+          groupId: ctx.groupId,
+          parentBlockId: block.id,
+          accept: ['action', 'actionEvent']
+        });
+        replaceZone.style.padding = '0';
+        replaceZone.style.border = '2px dashed rgba(255,255,255,.08)';
+        replaceZone.style.borderRadius = '12px';
+        replaceZone.style.minHeight = '64px';
+        replaceZone.style.transition = 'border-color .15s ease, background .15s ease';
+        replaceZone.style.position = 'relative';
+        replaceZone.style.zIndex = '5';
+
+        if (block.data.child) {
+          const inner = block.data.child;
+
+          const innerKind = inner.kind || ACTION_KINDS().find(k => REGISTRY[k]?.[inner.subtype]) || 'action';
+          const meta = REGISTRY[innerKind]?.[inner.subtype];
+
+          // Bloque interno con el MISMO diseño
+          const innerBlock = document.createElement('div');
+          innerBlock.className = `block ${blockClass('action', inner.subtype)}`;
+          innerBlock.style.margin = '0'; // sin márgenes dentro del slot
+
+          innerBlock.innerHTML = `
+            <div class="block-head">
+              <div>${meta?.label || inner.subtype}</div>
+              <div class="tools">
+                <button class="icon-btn danger" title="Quitar acción interna">🗑</button>
+              </div>
+            </div>
+          `;
+
+          const innerBody = document.createElement('div');
+          innerBody.className = 'block-body';
+          innerBlock.appendChild(innerBody);
+
+          // Render original del action, pero apuntando a inner.data
+          // (así sus inputs funcionan normal)
+          const updateProxy = () => { update(); /* solo refresca YAML */ };
+          meta?.render?.(
+            innerBody,
+            { id: inner.id || (inner.id = uid()), kind:'action', subtype: inner.subtype, data: inner.data },
+            updateProxy,
+            ctx
+          );
+
+          innerBlock.querySelector('.icon-btn.danger').addEventListener('click', ()=>{
+            block.data.child = null;
+            render();
+          });
+
+          // Quita el look "dashed" cuando ya hay algo dentro
+          replaceZone.style.borderStyle = 'solid';
+          replaceZone.appendChild(innerBlock);
+        } else {
+          // Hint cuando no hay nada
+          const hint = document.createElement('div');
+          hint.style.opacity = '.7';
+          hint.style.fontSize = '12px';
+          hint.style.padding = '12px';
+          hint.textContent = 'Drop an action here (message, title, playsound, give_item, ...)';
           replaceZone.appendChild(hint);
         }
 
@@ -841,7 +955,8 @@ const REGISTRY = {
           return `'to_target: message: &7(No inner action)'`;
         }
         const inner = block.data.child;
-        const meta  = REGISTRY.action?.[inner.subtype];
+        const innerKind = inner.kind || ACTION_KINDS().find(k => REGISTRY[k]?.[inner.subtype]) || 'action';
+        const meta = REGISTRY[innerKind]?.[inner.subtype];
         if (!meta || typeof meta.toYAML !== 'function') {
           return `'to_target: message: &7(Unsupported inner action)'`;
         }
@@ -851,6 +966,543 @@ const REGISTRY = {
         return `'to_target: ${unquoted}'`;
       }
     },
+    to_range: {
+      label: 'To Range',
+      className: 'flow',
+      defaults: { radius: 10, includePlayer: true, child: null }, // child: { subtype, data, id? }
+      render(body, block, update, ctx) {
+        body.innerHTML = `
+          <small style="opacity:1;font-size:14px;display:block;margin-bottom:8px">
+            Executes the inner action for all players within a radius (in blocks).
+          </small>
+          <div class="row two" style="margin-bottom:8px">
+            <div>
+              <label style="opacity:.8;font-size:12px;display:block;margin:0 0 6px">Radius (blocks)</label>
+              <input type="number" min="1" step="1" value="${block.data.radius}" />
+            </div>
+            <div>
+              <label style="opacity:.8;font-size:12px;display:block;margin:0 0 6px">Include triggering player?</label>
+              <select>
+                <option value="true"  ${block.data.includePlayer ? 'selected':''}>true</option>
+                <option value="false" ${!block.data.includePlayer ? 'selected':''}>false</option>
+              </select>
+            </div>
+          </div>
+        `;
+
+        const [radiusInput, includeSel] = body.querySelectorAll('input, select');
+        radiusInput.addEventListener('input', e => {
+          block.data.radius = parseInt(e.target.value || '0', 10);
+          update();
+        });
+        includeSel.addEventListener('change', e => {
+          block.data.includePlayer = (e.target.value === 'true');
+          update();
+        });
+
+        // Zona de reemplazo (igual que en to_target), para una sola acción hija
+        const replaceZone = createZone(ctx.event, {
+          type: 'to-slot',
+          groupId: ctx.groupId,
+          parentBlockId: block.id,
+          accept: ['action', 'actionEvent']
+        });
+        replaceZone.style.padding = '0';
+        replaceZone.style.border = '2px dashed rgba(255,255,255,.08)';
+        replaceZone.style.borderRadius = '12px';
+        replaceZone.style.minHeight = '64px';
+        replaceZone.style.transition = 'border-color .15s ease, background .15s ease';
+        replaceZone.style.position = 'relative';
+        replaceZone.style.zIndex = '5';
+
+        if (block.data.child) {
+          const inner = block.data.child;
+
+          const innerKind = inner.kind || ACTION_KINDS().find(k => REGISTRY[k]?.[inner.subtype]) || 'action';
+          const meta = REGISTRY[innerKind]?.[inner.subtype];
+
+          const innerBlock = document.createElement('div');
+          innerBlock.className = `block ${blockClass('action', inner.subtype)}`;
+          innerBlock.style.margin = '0';
+
+          innerBlock.innerHTML = `
+            <div class="block-head">
+              <div>${meta?.label || inner.subtype}</div>
+              <div class="tools">
+                <button class="icon-btn danger" title="Quitar acción interna">🗑</button>
+              </div>
+            </div>
+          `;
+
+          const innerBody = document.createElement('div');
+          innerBody.className = 'block-body';
+          innerBlock.appendChild(innerBody);
+
+          const updateProxy = () => { update(); }; // refresca YAML
+          meta?.render?.(
+            innerBody,
+            { id: inner.id || (inner.id = uid()), kind:'action', subtype: inner.subtype, data: inner.data },
+            updateProxy,
+            ctx
+          );
+
+          innerBlock.querySelector('.icon-btn.danger').addEventListener('click', () => {
+            block.data.child = null;
+            render();
+          });
+
+          replaceZone.style.borderStyle = 'solid';
+          replaceZone.appendChild(innerBlock);
+        } else {
+          const hint = document.createElement('div');
+          hint.style.opacity = '.7';
+          hint.style.fontSize = '12px';
+          hint.style.padding = '12px';
+          hint.textContent = 'Drop an action here (message, title, playsound, give_item, …)';
+          replaceZone.appendChild(hint);
+        }
+
+        body.appendChild(replaceZone);
+      },
+      toYAML(block) {
+        const radius = Number.isFinite(block.data.radius) ? block.data.radius : 10;
+        const inc = block.data.includePlayer ? 'true' : 'false';
+
+        if (!block.data.child) {
+          return `'to_range: ${radius};${inc}: message: &7(No inner action)'`;
+        }
+        const inner = block.data.child;
+        const innerKind = inner.kind || ACTION_KINDS().find(k => REGISTRY[k]?.[inner.subtype]) || 'action';
+        const meta = REGISTRY[innerKind]?.[inner.subtype];
+        if (!meta || typeof meta.toYAML !== 'function') {
+          return `'to_range: ${radius};${inc}: message: &7(Unsupported inner action)'`;
+        }
+        // Reusar toYAML del hijo y quitar comillas externas
+        const innerLine = meta.toYAML({ kind:'action', subtype: inner.subtype, data: inner.data }) || "'message: TODO'";
+        const unquoted  = innerLine.replace(/^'(.*)'$/, '$1');
+        return `'to_range: ${radius};${inc}: ${unquoted}'`;
+      }
+    },
+    to_player: {
+      label: 'To Player',
+      className: 'flow',
+      defaults: { player: '%player%', child: null },
+      render(body, block, update, ctx) {
+        body.innerHTML = `
+          <small style="opacity:1;font-size:14px;display:block;margin-bottom:8px">
+            Executes the inner action for a <b>specific player</b>.
+          </small>
+          <div class="row single" style="margin-bottom:8px">
+            <input type="text" value="${block.data.player || '%player%'}" placeholder="%arg_1% / %player% / Notch" />
+          </div>
+        `;
+
+        // input del jugador
+        const inp = body.querySelector('input');
+        inp.addEventListener('input', e => { block.data.player = e.target.value; update(); });
+
+        // slot interno (solo actions normales)
+        const replaceZone = createZone(ctx.event, {
+          type: 'to-slot',
+          groupId: ctx.groupId,
+          parentBlockId: block.id,
+          accept: ['action', 'actionEvent']
+        });
+        replaceZone.style.padding = '0';
+        replaceZone.style.border = '2px dashed rgba(255,255,255,.08)';
+        replaceZone.style.borderRadius = '12px';
+        replaceZone.style.minHeight = '64px';
+        replaceZone.style.transition = 'border-color .15s ease, background .15s ease';
+        replaceZone.style.position = 'relative';
+        replaceZone.style.zIndex = '5';
+
+        if (block.data.child) {
+          const inner = block.data.child;
+          const innerKind = inner.kind || 'action';
+          const meta = REGISTRY[innerKind]?.[inner.subtype];
+
+          const innerBlock = document.createElement('div');
+          innerBlock.className = `block ${blockClass('action', inner.subtype)}`;
+          innerBlock.style.margin = '0';
+          innerBlock.innerHTML = `
+            <div class="block-head">
+              <div>${meta?.label || inner.subtype}</div>
+              <div class="tools">
+                <button class="icon-btn danger" title="Quitar acción interna">🗑</button>
+              </div>
+            </div>
+          `;
+          const innerBody = document.createElement('div');
+          innerBody.className = 'block-body';
+          innerBlock.appendChild(innerBody);
+
+          const updateProxy = () => { update(); };
+          meta?.render?.(
+            innerBody,
+            { id: inner.id || (inner.id = uid()), kind: 'action', subtype: inner.subtype, data: inner.data },
+            updateProxy,
+            ctx
+          );
+
+          innerBlock.querySelector('.icon-btn.danger').addEventListener('click', () => {
+            block.data.child = null;
+            render();
+          });
+
+          replaceZone.style.borderStyle = 'solid';
+          replaceZone.appendChild(innerBlock);
+        } else {
+          const hint = document.createElement('div');
+          hint.style.opacity = '.7';
+          hint.style.fontSize = '12px';
+          hint.style.padding = '12px';
+          hint.textContent = 'Drop an action here (message, title, playsound, give_item, …)';
+          replaceZone.appendChild(hint);
+        }
+
+        body.appendChild(replaceZone);
+      },
+      toYAML(block) {
+        const who = (block.data.player || '%player%').trim();
+        if (!block.data.child) {
+          return `'to_player: ${escQ(who)}: message: &7(No inner action)'`;
+        }
+        const inner = block.data.child;
+        const innerKind = inner.kind || 'action';
+        const meta = REGISTRY[innerKind]?.[inner.subtype];
+        if (!meta || typeof meta.toYAML !== 'function') {
+          return `'to_player: ${escQ(who)}: message: &7(Unsupported inner action)'`;
+        }
+        const innerLine = meta.toYAML({ kind:'action', subtype: inner.subtype, data: inner.data }) || "'message: TODO'";
+        const unquoted  = innerLine.replace(/^'(.*)'$/, '$1');
+        return `'to_player: ${escQ(who)}: ${unquoted}'`;
+      }
+    },
+    to_condition: {
+      label: 'To Condition',
+      className: 'flow',
+      defaults: { group: 'group1', child: null }, // child: { subtype, data, id? }
+      render(body, block, update, ctx) {
+        body.innerHTML = `
+          <small style="opacity:1;font-size:14px;display:block;margin-bottom:8px">
+            Executes the inner action for players that match a condition group defined in
+            <code>Config → to_condition_groups</code>.
+          </small>
+          <div class="row single" style="margin-bottom:8px">
+            <input type="text" value="${block.data.group || 'group1'}" placeholder="group1" />
+          </div>
+        `;
+
+        // input de grupo
+        const inp = body.querySelector('input');
+        inp.addEventListener('input', e => { block.data.group = e.target.value; update(); });
+
+        // slot interno (solo actions normales)
+        const replaceZone = createZone(ctx.event, {
+          type: 'to-slot',
+          groupId: ctx.groupId,
+          parentBlockId: block.id,
+          accept: ['action', 'actionEvent']
+        });
+        replaceZone.style.padding = '0';
+        replaceZone.style.border = '2px dashed rgba(255,255,255,.08)';
+        replaceZone.style.borderRadius = '12px';
+        replaceZone.style.minHeight = '64px';
+        replaceZone.style.transition = 'border-color .15s ease, background .15s ease';
+        replaceZone.style.position = 'relative';
+        replaceZone.style.zIndex = '5';
+
+        if (block.data.child) {
+          const inner = block.data.child;
+          const innerKind = inner.kind || 'action';
+          const meta = REGISTRY[innerKind]?.[inner.subtype];
+
+          const innerBlock = document.createElement('div');
+          innerBlock.className = `block ${blockClass('action', inner.subtype)}`;
+          innerBlock.style.margin = '0';
+          innerBlock.innerHTML = `
+            <div class="block-head">
+              <div>${meta?.label || inner.subtype}</div>
+              <div class="tools">
+                <button class="icon-btn danger" title="Quitar acción interna">🗑</button>
+              </div>
+            </div>
+          `;
+          const innerBody = document.createElement('div');
+          innerBody.className = 'block-body';
+          innerBlock.appendChild(innerBody);
+
+          const updateProxy = () => { update(); };
+          meta?.render?.(
+            innerBody,
+            { id: inner.id || (inner.id = uid()), kind: 'action', subtype: inner.subtype, data: inner.data },
+            updateProxy,
+            ctx
+          );
+
+          innerBlock.querySelector('.icon-btn.danger').addEventListener('click', () => {
+            block.data.child = null;
+            render();
+          });
+
+          replaceZone.style.borderStyle = 'solid';
+          replaceZone.appendChild(innerBlock);
+        } else {
+          const hint = document.createElement('div');
+          hint.style.opacity = '.7';
+          hint.style.fontSize = '12px';
+          hint.style.padding = '12px';
+          hint.textContent = 'Drop an action here (message, title, playsound, give_item, …)';
+          replaceZone.appendChild(hint);
+        }
+
+        body.appendChild(replaceZone);
+      },
+      toYAML(block) {
+        const group = (block.data.group || 'group1').trim() || 'group1';
+
+        if (!block.data.child) {
+          return `'to_condition: ${escQ(group)}: message: &7(No inner action)'`;
+        }
+        const inner = block.data.child;
+        const innerKind = inner.kind || 'action';
+        const meta = REGISTRY[innerKind]?.[inner.subtype];
+        if (!meta || typeof meta.toYAML !== 'function') {
+          return `'to_condition: ${escQ(group)}: message: &7(Unsupported inner action)'`;
+        }
+        const innerLine = meta.toYAML({ kind: 'action', subtype: inner.subtype, data: inner.data }) || "'message: TODO'";
+        const unquoted = innerLine.replace(/^'(.*)'$/, '$1');
+        return `'to_condition: ${escQ(group)}: ${unquoted}'`;
+      }
+    },
+  },
+
+  actionEvent: {
+    __meta: { label: 'Event Actions', color: 'var(--msg)' },
+    keep_items: {
+      label: 'Keep Items',
+      className: 'heal',
+      defaults: { mode: 'items' },
+      render(body, block, update, ctx) {
+        const allowed = new Set(['player_death']);
+        const notice = renderEventCompatibilityNotice(allowed, ctx);
+
+        body.innerHTML = `<small style="opacity:1;font-size:14px">
+              Allows the player to keep their items or xp on death.
+          </small>
+
+          <div class="row two">
+            <label style="opacity:.8; align-self:center;">Select what the player will keep</label>
+            <select>
+              ${['items', 'xp', 'all']
+                .map(mode => `<option ${block.data.mode === mode ? 'selected' : ''}>${mode}</option>`)
+                .join('')}
+            </select>
+          </div>`;
+
+        body.prepend(notice);
+        const sel = body.querySelector('select');
+        sel.addEventListener('change', e => {
+          block.data.mode = e.target.value;
+          update();
+        });
+      },
+      toYAML(block) {
+        return `'keep_items: ${block.data.mode}'`;
+      }
+    },
+    cancel_drop: {
+      label:'Cancel Drop (1.13+)', className:'danger',
+      defaults:{ value:true },
+      render(body, block, update, ctx){
+        const allowed = new Set(['block_break','player_kill']);
+        const notice = renderEventCompatibilityNotice(allowed, ctx);
+
+        body.innerHTML = `<small style="opacity:1;font-size:14px">
+              It will completely cancel item drops from the block/entity.
+          </small>
+          <div class="row two">
+            <label style="opacity:.8; align-self:center;">Cancel this event</label>
+            <select>
+              <option ${block.data.value?'selected':''} value="true">true</option>
+              <option ${!block.data.value?'selected':''} value="false">false</option>
+            </select>
+          </div>`;
+        body.prepend(notice);
+        body.querySelector('select').addEventListener('change', e=>{ block.data.value = (e.target.value==='true'); update(); });
+      },
+      toYAML(block){ return `'cancel_drop: ${block.data.value ? 'true':'false'}'`; }
+    },
+    set_damage: {
+      label: 'Set Damage',
+      className: 'danger',
+      defaults: { value: 10, mode: 'points' }, // points | percent
+      render(body, block, update, ctx){
+        const allowed = new Set(['player_attack','player_damage']);
+        const notice = renderEventCompatibilityNotice(allowed, ctx);
+
+        body.innerHTML = `<small style="opacity:1;font-size:14px">
+              Allows to modify the final damage of the attack/damage taken.
+          </small>
+
+          <div class="row two" style="margin-top:4px">
+            <div>
+              <label style="opacity:.8;font-size:12px;display:block;margin:0 0 6px">Value</label>
+              <input type="number" step="0.1" value="${block.data.value}" />
+            </div>
+            <div>
+              <label style="opacity:.8;font-size:12px;display:block;margin:0 0 6px">Mode</label>
+              <select>
+                <option value="points"  ${block.data.mode==='points' ? 'selected':''}>Points (1 point = 1 half-heart)</option>
+                <option value="percent" ${block.data.mode==='percent'? 'selected':''}>%</option>
+              </select>
+            </div>
+          </div>
+        `;
+
+        body.prepend(notice);
+        const [valInput, modeSel] = body.querySelectorAll('input, select');
+        valInput.addEventListener('input', e => {
+          const v = parseFloat(e.target.value || '0');
+          block.data.value = Number.isFinite(v) ? v : 0;
+          update();
+        });
+        modeSel.addEventListener('change', e => {
+          block.data.mode = e.target.value === 'percent' ? 'percent' : 'points';
+          update();
+        });
+      },
+      toYAML(block){
+        const v = (typeof block.data.value === 'number' && Number.isFinite(block.data.value)) ? block.data.value : 0;
+        return `'set_damage: ${v}${block.data.mode==='percent' ? '%' : ''}'`;
+      }
+    },
+    hide_join_message: {
+      label:'Hide Join Message', className:'msg',
+      defaults:{ value:true },
+      render(body, block, update, ctx){
+        const allowed = new Set(['player_join']);
+        const notice = renderEventCompatibilityNotice(allowed, ctx);
+
+        body.innerHTML = `<small style="opacity:1;font-size:14px">
+              Allows to completely hide the player join message.
+          </small>
+          <div class="row two">
+            <label style="opacity:.8; align-self:center;">Hide the player's join message?</label>
+            <select>
+              <option ${block.data.value?'selected':''} value="true">true</option>
+              <option ${!block.data.value?'selected':''} value="false">false</option>
+            </select>
+          </div>`;
+        body.prepend(notice);
+        body.querySelector('select').addEventListener('change', e=>{ block.data.value = (e.target.value==='true'); update(); });
+      },
+      toYAML(block){ return `'hide_join_message: ${block.data.value ? 'true':'false'}'`; }
+    },
+    hide_leave_message: {
+      label:'Hide Leave Message', className:'msg',
+      defaults:{ value:true },
+      render(body, block, update, ctx){
+        const allowed = new Set(['player_leave']);
+        const notice = renderEventCompatibilityNotice(allowed, ctx);
+
+        body.innerHTML = `<small style="opacity:1;font-size:14px">
+              Allows to completely hide the player leave message.
+          </small>
+          <div class="row two">
+            <label style="opacity:.8; align-self:center;">Hide the player's leave message?</label>
+            <select>
+              <option ${block.data.value?'selected':''} value="true">true</option>
+              <option ${!block.data.value?'selected':''} value="false">false</option>
+            </select>
+          </div>`;
+        body.prepend(notice);
+        body.querySelector('select').addEventListener('change', e=>{ block.data.value = (e.target.value==='true'); update(); });
+      },
+      toYAML(block){ return `'hide_leave_message: ${block.data.value ? 'true':'false'}'`; }
+    },
+    set_death_message: {
+      label:'Set Death Message', className:'msg',
+      defaults:{ text:'Enter your message here...' },
+      render(body, block, update, ctx){
+        const allowed = new Set(['player_death']);
+        const notice = renderEventCompatibilityNotice(allowed, ctx);
+
+        body.innerHTML = `<small style="opacity:1;font-size:14px">
+              Allows to replace the player death message with a custom one. You can set it to "no" to hide the death message.
+          </small>
+          <div class="row single"><input type="text" value="${block.data.text}" /></div>`;
+        body.prepend(notice);
+        body.querySelector('input').addEventListener('input', e=>{ block.data.text = e.target.value; update(); });
+      },
+      toYAML(block){ return `'set_death_message: ${escQ(block.data.text)}'`; }
+    },
+    prevent_join: {
+      label:'Prevent Join', className:'danger',
+      defaults:{ text:'Enter your message here...' },
+      render(body, block, update, ctx){
+        const allowed = new Set(['player_pre_join']);
+        const notice = renderEventCompatibilityNotice(allowed, ctx);
+
+        body.innerHTML = `<small style="opacity:1;font-size:14px">
+              Prevents the player from joining the server, with a custom message.
+          </small>
+          <div class="row single"><input type="text" value="${block.data.text}" /></div>`;
+        body.prepend(notice);
+        body.querySelector('input').addEventListener('input', e=>{ block.data.text = e.target.value; update(); });
+      },
+      toYAML(block){ return `'prevent_join: ${escQ(block.data.text)}'`; }
+    },
+    set_item: {
+      label:'Set Item', className:'heal',
+      defaults:{ text:'id:DIAMOND;name:&bSuspicious Diamond' },
+      render(body, block, update, ctx){
+        const allowed = new Set(['player_fish']);
+        const notice = renderEventCompatibilityNotice(allowed, ctx);
+
+        body.innerHTML = `<small style="opacity:1;font-size:14px">
+              Allows to modify the item caught by the player. Use this format: "id:&lt;id&gt;;&lt;property&gt;:&lt;value&gt;;&lt;propertyN&gt;:&lt;valueN&gt;"
+          </small>
+          <div class="row single"><input type="text" value="${block.data.text}" /></div>`;
+        body.prepend(notice);
+        body.querySelector('input').addEventListener('input', e=>{ block.data.text = e.target.value; update(); });
+      },
+      toYAML(block){ return `'set_item: ${escQ(block.data.text)}'`; }
+    },
+    set_event_xp: {
+      label:'Set Event XP', className:'heal',
+      defaults:{ points:0 },
+      render(body, block, update, ctx){
+        const allowed = new Set(['block_break','player_fish']);
+        const notice = renderEventCompatibilityNotice(allowed, ctx);
+
+        body.innerHTML = `<small style="opacity:1;font-size:14px">
+              Allows to modify the xp dropped when breaking a block or fishing. Set to 0 to prevent xp from being dropped.
+          </small>
+        <div class="row single">
+          <input type="number" min="1" step="1" value="${block.data.points}" />
+        </div>`;
+        body.prepend(notice);
+        body.querySelector('input').addEventListener('input', e=>{ block.data.points = parseInt(e.target.value||'0',10); update(); });
+      },
+      toYAML(block){ return `'set_event_xp: ${block.data.points}'`; }
+    },
+    tab_complete: {
+      label:'Tab Complete', className:'cmd',
+      defaults:{ text:'set;<arg1>,<arg2>,<argN>' },
+      render(body, block, update, ctx){
+        const allowed = new Set(['player_tab_complete']);
+        const notice = renderEventCompatibilityNotice(allowed, ctx);
+
+        body.innerHTML = `<small style="opacity:1;font-size:14px">
+              Allows to modify the commands arguments displayed for the player in chat.
+          </small>
+          <div class="row single"><input type="text" value="${block.data.text}" /></div>`;
+        body.prepend(notice);
+        body.querySelector('input').addEventListener('input', e=>{ block.data.text = e.target.value; update(); });
+      },
+      toYAML(block){ return `'tab_complete: ${escQ(block.data.text)}'`; }
+    },
   },
 
   setting: {
@@ -859,7 +1511,7 @@ const REGISTRY = {
       label:'Repetitive Time', className:'setting',
       defaults:{ ticks:20 },
       settingKey:'repetitive_time',
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<div class="row single">
           <input type="number" min="1" step="1" value="${block.data.ticks}" />
         </div>
@@ -873,12 +1525,24 @@ const REGISTRY = {
       label:'Ignore With Permission', className:'setting',
       defaults:{ perm:'conditionalevents.ignore.example' },
       settingKey:'ignore_with_permission',
-      render(body, block, update){
+      render(body, block, update, ctx){
         body.innerHTML = `<div class="row single"><input type="text" value="${block.data.perm}" placeholder="conditionalevents.ignore.<id>" /></div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.perm = e.target.value; update(); });
       }
     }
   }
+};
+
+const ICONS = {
+  alert: `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+     fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round"
+     class="lucide lucide-triangle-alert">
+  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
+  <path d="M12 9v4"/>
+  <path d="M12 17h.01"/>
+</svg>`
 };
 
 /* ---------- Helpers / UX ---------- */
@@ -889,6 +1553,66 @@ window.addEventListener("beforeunload", (e) => {
     return e.returnValue;
   }
 });
+
+function resolveEventLabel(key){
+  for (const [kind, items] of Object.entries(REGISTRY)){
+    if (kind.startsWith('event') && items[key]?.label) return items[key].label;
+  }
+  return key.replace(/_/g,' ').toLowerCase();
+}
+
+// Devuelve HTML con la lista de eventos en el estilo deseado
+function formatEventList(allowed, {style='code'} = {}){
+  const arr = asArray(allowed).filter(Boolean).sort();
+  return arr.map(k => {
+    const label = resolveEventLabel(k);
+    if (style === 'label') return `<strong>${label}</strong>`;
+    if (style === 'both')  return `<code><strong>${k}</strong></code> <small style="opacity:.7">(${label})</small>`;
+    // default: keys en monoespaciado
+    return `<code><strong>${k}</strong></code>`;
+  }).join(' / ');
+}
+
+// Banner genérico "solo surte efecto en X eventos"
+function onlyOnEventsNotice(allowed, {tone='amber', style='code'} = {}){
+  const wrap = document.createElement('div');
+  wrap.className = `notice notice-${tone}`;
+  wrap.innerHTML = `
+    <div class="icon" aria-hidden="true">${ICONS.alert}</div>
+    <div class="content">
+      This action only takes effect on ${formatEventList(allowed, {style})} events.
+    </div>`;
+  return wrap;
+}
+
+// 🔧 Renderiza un aviso de compatibilidad con eventos
+function renderEventCompatibilityNotice(allowed, ctx, {style='code'} = {}) {
+  const allowedArr = Array.from(allowed || []);
+  const currentType = ctx?.event?.type || '';
+  const notApplies = !allowedArr.includes(currentType);
+
+  const tone = notApplies ? 'error' : 'warn';
+  const wrap = document.createElement('div');
+  wrap.className = `notice ${tone === 'error' ? 'error' : 'warn'}`;
+
+  // construimos lista de eventos aceptados
+  const eventsHTML = allowedArr
+    .map(k => `<code><strong>${k}</strong></code>`)
+    .join(' / ');
+
+  wrap.innerHTML = `
+    <div class="icon" aria-hidden="true">${ICONS.alert}</div>
+    <div class="content">
+      This action only takes effect on ${eventsHTML} events.
+      ${notApplies
+        ? `<br><span style="opacity:.8">
+             Current event: <code>${currentType || 'none'}</code>. It won’t take effect.
+           </span>`
+        : ''}
+    </div>
+  `;
+  return wrap;
+}
 
 let paletteObserver = null;
 
@@ -1029,36 +1753,111 @@ function setupDragAndTouch(){
   });
   palette.addEventListener('dragend', (e) => { e.target.closest('.chip')?.classList.remove('dragging'); });
 
-  // Touch
-  let touchedChip = null;
+  // Touch (mobile) — long-press to start drag sin romper el scroll
+  let pressedChip = null;
+  let pressTimer = null;
+  let startX = 0, startY = 0;
+  let draggingTouch = false;
+
+  const clearPress = () => {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+  };
+
   palette.addEventListener('touchstart', (e) => {
     const chip = e.target.closest('.chip');
-    if(!chip) return;
-    touchedChip = chip;
-    state.dragData = { kind: chip.dataset.kind, subtype: chip.dataset.subtype };
-    chip.classList.add('dragging');
-    e.preventDefault();
-  }, { passive:false });
+    if (!chip) return;
+
+    // No prevenimos por defecto: dejamos que el scroll funcione
+    pressedChip = chip;
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY;
+    draggingTouch = false;
+
+    pressTimer = setTimeout(() => {
+      // Long-press confirmado => empezamos drag
+      draggingTouch = true;
+      state.dragData = { kind: chip.dataset.kind, subtype: chip.dataset.subtype };
+      chip.classList.add('dragging');
+      document.body.classList.add('no-select');
+      if (navigator.vibrate) navigator.vibrate(10);
+    }, LONG_PRESS_MS);
+  }, { passive: true });
 
   palette.addEventListener('touchmove', (e) => {
-    if(!touchedChip) return; e.preventDefault();
-    const touch = e.touches[0];
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!pressedChip) return;
+
+    const t = e.touches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    const moved = Math.hypot(dx, dy);
+
+    if (!draggingTouch) {
+      // Aún no estamos en drag: si el usuario se movió (scroll), cancelamos
+      if (moved > MOVE_TOLERANCE) {
+        clearPress();
+        pressedChip = null; // permitimos que siga el scroll normal
+      }
+      return; // importantísimo: NO prevenimos para no bloquear el scroll
+    }
+
+    // Ya estamos en drag: prevenimos para que no haga scroll
+    e.preventDefault();
+    const el = document.elementFromPoint(t.clientX, t.clientY);
     document.querySelectorAll('.zone').forEach(z => z.classList.remove('over'));
     el?.closest('.zone')?.classList.add('over');
-  }, { passive:false });
+  }, { passive: false });
 
   palette.addEventListener('touchend', (e) => {
-    if (!touchedChip || !state.dragData) return;
-    const touch = e.changedTouches[0];
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!pressedChip && !draggingTouch) return;
+
+    clearPress();
+    const chip = pressedChip;
+    const wasDragging = draggingTouch;
+
+    pressedChip = null;
+    draggingTouch = false;
+    chip?.classList.remove('dragging');
+    document.body.classList.remove('no-select');
+
+    if (!wasDragging) return;
+
+    const t = e.changedTouches[0];
+    const el = document.elementFromPoint(t.clientX, t.clientY);
     const zone = el?.closest('.zone');
-    if (zone) {
+
+    if (zone && state.dragData) {
       const card = zone.closest('.event-card');
       const eventId = card?.dataset.eventId;
       const ztype = zone.dataset.zoneType;
       const groupId = zone.dataset.groupId || null;
       const parentBlockId = zone.dataset.parentBlockId || null;
+
+      // === Lista de tipos permitidos por zona (mismo criterio que createZone) ===
+      const ALLOWED = {
+        'to-slot': ['action'], // SOLO acciones reales
+        'action-group': ['action', 'actionTo', 'actionEvent'], // SOLO acciones reales
+        'non-action': [
+          'condition',
+          'setting',
+          'eventType',
+          'eventPlayerType',
+          'eventBlockType',
+          'eventItemType',
+          'eventOtherType',
+          'eventPluginsType'
+        ]
+      };
+      const allowedKinds = ALLOWED[ztype] || [];
+
+      // Filtro duro: si el kind no es aceptado por la zona, se ignora
+      if (!allowedKinds.includes(state.dragData.kind)) {
+        // feedback opcional
+        if (navigator.vibrate) navigator.vibrate(5);
+        state.dragData = null;
+        document.querySelectorAll('.zone').forEach(z => z.classList.remove('over'));
+        return;
+      }
 
       if (eventId) {
         if (ztype === 'to-slot' && parentBlockId) {
@@ -1067,10 +1866,18 @@ function setupDragAndTouch(){
                             : (ev.actionGroups.find(x=>x.name==='default') || ev.actionGroups[0]);
           if (ev && g) {
             const toBlock = g.blocks.find(b=>b.id===parentBlockId);
-            const meta = REGISTRY.action?.[state.dragData.subtype];
+            const meta = REGISTRY[state.dragData.kind]?.[state.dragData.subtype];
             if (toBlock && meta) {
+              // Guard final por si llega un wrapper (no debería por ALLOWED)
+              if (state.dragData.kind !== 'action') {
+                if (navigator.vibrate) navigator.vibrate(5);
+                state.dragData = null;
+                document.querySelectorAll('.zone').forEach(z => z.classList.remove('over'));
+                return;
+              }
               toBlock.data.child = {
                 id: uid(),
+                kind: 'action', // ← forzamos a acción real
                 subtype: state.dragData.subtype,
                 data: deepClone(meta.defaults || {})
               };
@@ -1078,19 +1885,24 @@ function setupDragAndTouch(){
             }
           }
         } else {
-          // flujo normal
+          // Zonas normales (validado arriba)
           addBlock(eventId, state.dragData.kind, state.dragData.subtype, { groupId, zoneType: ztype });
         }
       }
     }
-    touchedChip.classList.remove('dragging');
+
+    state.dragData = null;
     document.querySelectorAll('.zone').forEach(z => z.classList.remove('over'));
-    touchedChip = null; state.dragData = null;
-  });
+  }, { passive: true });
+
   palette.addEventListener('touchcancel', () => {
-    touchedChip?.classList.remove('dragging');
+    clearPress();
+    pressedChip?.classList.remove('dragging');
+    pressedChip = null;
+    draggingTouch = false;
+    state.dragData = null;
+    document.body.classList.remove('no-select');
     document.querySelectorAll('.zone').forEach(z => z.classList.remove('over'));
-    touchedChip = null; state.dragData = null;
   });
 }
 
@@ -1113,35 +1925,43 @@ function createZone(ev, { type, groupId=null, accept, parentBlockId=null }){
   };
   const drop = (e)=>{
     e.preventDefault();
-    e.stopPropagation(); // <- CLAVE
+    e.stopPropagation();
     z.classList.remove('over');
     try {
       const payload = JSON.parse(e.dataTransfer.getData('application/json'));
       if (!accept.includes(payload.kind)) return;
 
-      // Manejo especial: to_target slot
+      // --- SLOT INTERNO (to-slot) ---
       if (type === 'to-slot' && parentBlockId) {
-        const g = groupId ? ev.actionGroups.find(x=>x.id===groupId)
-                          : (ev.actionGroups.find(x=>x.name==='default') || ev.actionGroups[0]);
+        const g = groupId
+          ? ev.actionGroups.find(x=>x.id===groupId)
+          : (ev.actionGroups.find(x=>x.name==='default') || ev.actionGroups[0]);
         if (!g) return;
-        const toBlock = g.blocks.find(b=>b.id===parentBlockId);
+        const toBlock = g.blocks.find(x=>x.id===parentBlockId);
         if (!toBlock) return;
 
-        const meta = REGISTRY.action?.[payload.subtype];
+        const meta = getActionMeta(payload.kind, payload.subtype);
         if (!meta) return;
 
         toBlock.data.child = {
           id: uid(),
+          kind: payload.kind,
           subtype: payload.subtype,
           data: deepClone(meta.defaults || {})
         };
-        render(); // repinta para ver el bloque anidado
-        return;   // <- NO seguir con addBlock
+        render();
+        return;
       }
 
-      // Flujo normal (no es to-slot)
-      addBlock(ev.id, payload.kind, payload.subtype, { groupId, zoneType: type });
-    } catch(err){ console.warn(err); }
+      // --- NORMAL ---
+      addBlock(ev.id, payload.kind, payload.subtype, {
+        groupId,
+        zoneType: type,
+        parentBlockId
+      });
+    } catch (err) {
+      console.warn(err);
+    }
   };
 
   z.addEventListener('dragover', over);
@@ -1157,8 +1977,27 @@ function addBlock(eventId, kind, subtype, opts={}){
   const ev = state.events.find(x=>x.id===eventId);
   if(!ev) return;
 
+  if (isEventKind(kind)) {
+    ev.type = subtype;         // <- AQUÍ está la magia
+    render();
+    return;
+  }
+
+  if (isActionKind(kind)) {
+    let group = null;
+    if(opts.groupId) group = ev.actionGroups.find(g=>g.id===opts.groupId);
+    if(!group) group = ev.actionGroups.find(g=>g.name==='default') || ev.actionGroups[0];
+
+    const meta = getActionMeta(kind, subtype);
+    if(!meta){ console.warn('Unknown action', kind, subtype); return; }
+
+    group.blocks.push({ id: uid(), kind, subtype, data: deepClone(meta.defaults || {}) });
+    render();
+    return;
+  }
+
   // --- SLOT INTERNO (to_target) ---
-  if (kind === 'action' && opts.zoneType === 'to-slot' && opts.parentBlockId) {
+  if (isActionKind(kind) && opts.zoneType === 'to-slot' && opts.parentBlockId) {
     // busca el bloque contenedor dentro de sus grupos
     let parent = null;
     for (const g of ev.actionGroups) {
@@ -1185,9 +2024,7 @@ function addBlock(eventId, kind, subtype, opts={}){
   }
 
   // --- Lógica NORMAL ya existente ---
-  if(kind==='eventType'){
-    ev.type = subtype;
-  } else if (kind==='action') {
+  if (kind==='action') {
     let group = null;
     if(opts.groupId) group = ev.actionGroups.find(g=>g.id===opts.groupId);
     if(!group){
@@ -1361,10 +2198,10 @@ function render(){
       });
       groupCard.appendChild(head);
 
-      const zone = createZone(ev, { type:'action-group', groupId:g.id, accept:['action'] });
+      const zone = createZone(ev, { type:'action-group', groupId:g.id, accept: ACTION_KINDS() });
       // acciones dentro del group
       g.blocks.forEach(b=>{
-        const meta  = REGISTRY.action?.[b.subtype];
+        const meta = REGISTRY[b.kind]?.[b.subtype];
         const block = document.createElement('div');
         block.className = `block ${blockClass(b.kind,b.subtype)}`;
         const title = meta?.label || b.subtype;
@@ -1455,7 +2292,7 @@ function buildYAML(){
         lines.push(`      ${key}:`);
         if(g.blocks.length){
           g.blocks.forEach(b=>{
-            const meta = REGISTRY.action[b.subtype];
+            const meta = REGISTRY[b.kind]?.[b.subtype];
             const s = meta?.toYAML ? meta.toYAML(b) : `'message: TODO'`;
             lines.push(`      - ${s}`);
           });
