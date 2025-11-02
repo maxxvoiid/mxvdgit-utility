@@ -8,6 +8,15 @@ const ymlOut = document.getElementById('yml');
 const appEl = document.querySelector('.app');
 const yamlPanel = document.getElementById('yamlPanel');
 const yamlShowBtn = document.getElementById('yamlShowBtn');
+const paletteSearchInput = document.getElementById('paletteSearch');
+let paletteSearchQuery = '';
+
+if(paletteSearchInput){
+  paletteSearchInput.addEventListener('input', (event) => {
+    paletteSearchQuery = event.target.value;
+    applyPaletteFilter();
+  });
+}
 
 const MIN_WIDTH = 980;
 document.getElementById('minWidthText').textContent = MIN_WIDTH + ' px';
@@ -816,7 +825,7 @@ const REGISTRY = {
             <div class="block-head">
               <div>${meta?.label || inner.subtype}</div>
               <div class="tools">
-                <button class="icon-btn danger" title="Quitar acción interna">🗑</button>
+                <button class="icon-btn danger" title="Quitar acción interna">${ICONS.trash}</button>
               </div>
             </div>
           `;
@@ -911,7 +920,7 @@ const REGISTRY = {
             <div class="block-head">
               <div>${meta?.label || inner.subtype}</div>
               <div class="tools">
-                <button class="icon-btn danger" title="Quitar acción interna">🗑</button>
+                <button class="icon-btn danger" title="Quitar acción interna">${ICONS.trash}</button>
               </div>
             </div>
           `;
@@ -1029,7 +1038,7 @@ const REGISTRY = {
             <div class="block-head">
               <div>${meta?.label || inner.subtype}</div>
               <div class="tools">
-                <button class="icon-btn danger" title="Quitar acción interna">🗑</button>
+                <button class="icon-btn danger" title="Quitar acción interna">${ICONS.trash}</button>
               </div>
             </div>
           `;
@@ -1128,7 +1137,7 @@ const REGISTRY = {
             <div class="block-head">
               <div>${meta?.label || inner.subtype}</div>
               <div class="tools">
-                <button class="icon-btn danger" title="Quitar acción interna">🗑</button>
+                <button class="icon-btn danger" title="Quitar acción interna">${ICONS.trash}</button>
               </div>
             </div>
           `;
@@ -1224,7 +1233,7 @@ const REGISTRY = {
             <div class="block-head">
               <div>${meta?.label || inner.subtype}</div>
               <div class="tools">
-                <button class="icon-btn danger" title="Quitar acción interna">🗑</button>
+                <button class="icon-btn danger" title="Quitar acción interna">${ICONS.trash}</button>
               </div>
             </div>
           `;
@@ -1542,6 +1551,15 @@ const ICONS = {
   <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
   <path d="M12 9v4"/>
   <path d="M12 17h.01"/>
+</svg>`,
+  trash: `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+     fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round"
+     class="lucide lucide-trash">
+  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+  <path d="M3 6h18"/>
+  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
 </svg>`
 };
 
@@ -1640,6 +1658,43 @@ function buildPaletteNav(){
   // intersection observer igual que antes
 }
 
+function applyPaletteFilter(){
+  const palette = document.getElementById('palette');
+  const nav = document.getElementById('paletteNav');
+  const query = paletteSearchQuery.trim().toLowerCase();
+
+  if(!palette || !nav) return;
+
+  const sections = palette.querySelectorAll('.palette-section');
+  sections.forEach(section => {
+    const chips = Array.from(section.querySelectorAll('.chip'));
+    let matches = 0;
+    chips.forEach(chip => {
+      const label = chip.textContent.toLowerCase();
+      const isMatch = !query || label.includes(query);
+      chip.classList.toggle('is-hidden', !isMatch);
+      if(isMatch) matches++;
+    });
+
+    const hasMatches = matches > 0;
+    section.classList.toggle('is-hidden', !hasMatches);
+
+    const navBtn = nav.querySelector(`button[data-target="${section.id}"]`);
+    if(navBtn){
+      navBtn.classList.toggle('is-hidden', !hasMatches);
+    }
+  });
+
+  const visibleSections = Array.from(sections).some(section => !section.classList.contains('is-hidden'));
+  const hideNav = query !== '' && !visibleSections;
+  nav.classList.toggle('is-hidden', hideNav);
+
+  const grid = nav.parentElement;
+  if(grid && grid.classList.contains('palette-grid')){
+    grid.classList.toggle('nav-hidden', hideNav);
+  }
+}
+
 function buildPalette(){
   const palette = document.getElementById('palette');
   palette.innerHTML = '';
@@ -1668,6 +1723,7 @@ function buildPalette(){
 
   setupDragAndTouch();
   buildPaletteNav();
+  applyPaletteFilter();
 }
 
 /* ---------- Event CRUD (con Action Groups) ---------- */
@@ -2092,13 +2148,13 @@ function render(){
     const head = document.createElement('div');
     head.className = 'event-top';
     head.innerHTML = `
-      <input class="event-name" value="${ev.name}" title="Nombre del evento" />
+      <input class="event-name" value="${ev.name}" title="Event name" />
       <div class="event-type">
-        ${ev.type ? ('Event: '+ (Object.values(REGISTRY).find(cat => cat[ev.type])?.[ev.type]?.label || ev.type)) : '<em>Arrastra un tipo de Event aquí</em>'}
-        <button class="icon-btn danger event-del" title="Eliminar evento" aria-label="Eliminar evento">🗑</button>
+        ${ev.type ? ('Event: '+ (Object.values(REGISTRY).find(cat => cat[ev.type])?.[ev.type]?.label || ev.type)) : '<em>Drag an Event type here</em>'}
+        <button class="icon-btn danger event-del" title="Delete event" aria-label="Delete event">${ICONS.trash}</button>
       </div>`;
     head.querySelector('.event-del').addEventListener('click', ()=>{
-      if (confirm(`¿Eliminar el evento "${ev.name}"?`)) removeEventCompletely(ev.id);
+      if (confirm(`Delete the event "${ev.name}"?`)) removeEventCompletely(ev.id);
     });
     head.querySelector('.event-name').addEventListener('input', (e)=>{ ev.name = e.target.value; updateYAML(); });
     card.appendChild(head);
@@ -2128,7 +2184,7 @@ function render(){
           <div class="tools">
             <button class="icon-btn" title="Subir">▲</button>
             <button class="icon-btn" title="Bajar">▼</button>
-            <button class="icon-btn" title="Eliminar">🗑</button>
+            <button class="icon-btn" title="Eliminar">${ICONS.trash}</button>
           </div>
         </div>`;
       const body = document.createElement('div');
@@ -2153,7 +2209,7 @@ function render(){
     hintNA.style.opacity = '.7';
     hintNA.style.fontSize = '12px';
     hintNA.style.marginTop = '6px';
-    hintNA.textContent = 'Arrastra condiciones o settings aquí…';
+    hintNA.textContent = 'Drag events, conditions, or settings here...';
     nonActionZone.appendChild(hintNA);
     nonActionWrap.appendChild(nonActionZone);
     card.appendChild(nonActionWrap);
@@ -2165,7 +2221,7 @@ function render(){
     groupsHeader.innerHTML = `
       <div style="font-weight:700">Action Groups</div>
       <div class="builder-actions">
-        <button class="btn" title="Añadir action group">+ Add Group</button>
+        <button class="btn" title="Add action group">+ Add Group</button>
       </div>`;
     groupsHeader.querySelector('.btn').addEventListener('click', ()=>addActionGroup(ev.id, 'group'));
     card.appendChild(groupsHeader);
@@ -2187,7 +2243,7 @@ function render(){
         <div class="tools">
           <button class="icon-btn" title="Subir grupo">▲</button>
           <button class="icon-btn" title="Bajar grupo">▼</button>
-          <button class="icon-btn danger" title="Eliminar grupo">🗑</button>
+          <button class="icon-btn danger" title="Eliminar grupo">${ICONS.trash}</button>
         </div>`;
       const [btnUp, btnDown, btnDel] = head.querySelectorAll('.icon-btn');
       head.querySelector('input').addEventListener('input', e=>renameActionGroup(ev.id, g.id, e.target.value));
@@ -2210,7 +2266,7 @@ function render(){
             <div class="tools">
               <button class="icon-btn" title="Subir">▲</button>
               <button class="icon-btn" title="Bajar">▼</button>
-              <button class="icon-btn" title="Eliminar">🗑</button>
+              <button class="icon-btn" title="Eliminar">${ICONS.trash}</button>
             </div>
           </div>`;
         const body = document.createElement('div');
@@ -2232,7 +2288,7 @@ function render(){
       hint.style.opacity = '.7';
       hint.style.fontSize = '12px';
       hint.style.marginTop = '6px';
-      hint.textContent = 'Arrastra acciones aquí…';
+      hint.textContent = 'Drag actions here...';
       zone.appendChild(hint);
 
       const bodyWrap = document.createElement('div');

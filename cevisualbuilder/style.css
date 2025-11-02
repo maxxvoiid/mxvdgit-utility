@@ -43,13 +43,49 @@ html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text);
   min-height: 0;
 }
 
-.panel h2 {
-  margin: 0; padding: 12px 14px; font-size: 15px; letter-spacing: .2px; color: var(--muted);
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   background: linear-gradient(to bottom, rgba(255,255,255,.02), rgba(0,0,0,.05));
 }
 
+.panel-header h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: .2px;
+  color: var(--muted);
+}
+
+.is-hidden { display: none !important; }
+
 /* LEFT: Palette */
+.palette-header {
+  justify-content: space-between;
+}
+
+.palette-header .palette-search {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.palette-search input {
+  width: 100%;
+  background: #0d1220;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.palette-search input::placeholder {
+  color: rgba(255,255,255,0.45);
+}
+
 .palette { padding: 4px; gap: 8px; overflow: auto; }
 .palette-section { margin-bottom: 14px; }
 .palette-title { font-size: 12px; color: var(--muted); margin: 10px 4px 8px; text-transform: uppercase; letter-spacing: .8px; }
@@ -224,6 +260,14 @@ footer a:visited {
   min-height: 0;           /* para que la derecha pueda scrollear */
 }
 
+.palette-grid.nav-hidden{
+  grid-template-columns: 1fr;
+}
+
+.palette-grid.nav-hidden #palette{
+  grid-column: 1 / -1;
+}
+
 /* lista scrolleable de bloques */
 #palette{
   overflow: auto;
@@ -306,3 +350,10 @@ footer a:visited {
 .notice strong{ color:var(--ink); }
 .notice.warn{ --ink:#facc15; }   /* ámbar */
 .notice.error{ --ink:#f87171; }  /* rojo cuando NO aplica */
+
+.icon-btn svg {
+  width: 13px;
+  height: 16px;
+  stroke: currentColor;
+  display: block;
+}

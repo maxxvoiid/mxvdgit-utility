@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -13,10 +13,10 @@
         <div style="font-size: 48px; line-height: 1; margin-bottom: 8px">
           📱↔️
         </div>
-        <h3>Gira tu dispositivo o amplía la ventana</h3>
+        <h3>Rotate your device or enlarge the window</h3>
         <p>
-          Para usar el builder, pon el móvil en horizontal <u>o</u> aumenta el
-          ancho a <strong id="minWidthText">980 px</strong> o más.
+          To use the builder, turn your phone horizontally or increase the
+          width to <strong id="minWidthText">980 px</strong> or more.
         </p>
       </div>
     </div>
@@ -24,7 +24,17 @@
     <div class="app">
       <!-- LEFT: PALETTE -->
       <div class="panel">
-        <h2>Block Palette</h2>
+        <div class="panel-header palette-header">
+          <strong>Blocks</strong>
+          <div class="palette-search">
+            <input
+              type="search"
+              id="paletteSearch"
+              placeholder="Search blocks..."
+              aria-label="Search blocks"
+            />
+          </div>
+        </div>
         <div class="palette-grid">
           <nav id="paletteNav" class="palette-nav" aria-label="Categorías de bloques"></nav>
           <div class="palette" id="palette"></div>
@@ -36,7 +46,7 @@
         <div class="builder-header">
           <div style="display: flex; align-items: center; gap: 8px">
             <strong>Event Builder</strong>
-            <span class="kbd">Arrastra bloques aquí ↓</span>
+            <span class="kbd">Drag blocks here ↓</span>
           </div>
           <div class="builder-actions">
             <button class="btn" id="newEventBtn">+ New Event</button>
@@ -50,7 +60,7 @@
         <div class="yaml-toolbar">
           <strong>YML Output</strong>
           <span style="flex: 1"></span>
-          <button class="btn" id="collapseBtn" title="Colapsar YML">
+          <button class="btn" id="collapseBtn" title="Collapse YML">
             Hide
           </button>
           <button class="btn" id="copyBtn">Copy</button>
@@ -58,17 +68,17 @@
           <!-- <button class="btn" id="importBtn">Import</button> -->
         </div>
         <div class="yaml">
-          <pre id="yml"># Arrastra bloques a un evento para generar YAML…</pre>
+          <pre id="yml"># Drag blocks to an event to generate YAML...</pre>
         </div>
       </div>
     </div>
 
-    <button id="yamlShowBtn" class="yaml-peek" title="Mostrar YAML">YML</button>
+    <button id="yamlShowBtn" class="yaml-peek" title="Show YAML">YML</button>
 
     <footer>
-      Hecho con ♥ para crear y visualizar eventos de <b>ConditionalEvents</b>.
+      Made with ♥ to create and visualize <b><a href="https://www.spigotmc.org/resources/conditionalevents-custom-actions-for-specific-events-1-8-1-21-10.82271/" target="_blank">ConditionalEvents</a></b> events.
       <b
-        >Este sitio fue creado a partir de una petición en ChatGPT y se aloja en
+        >This site was created from a request in ChatGPT and is hosted at
         <a href="https://utility.mxvd.me" target="_blank">utility.mxvd.me</a
         >.</b
       >
