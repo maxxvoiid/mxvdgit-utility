@@ -236,6 +236,99 @@ footer {
   line-height: 1.6;
 }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 3000;
+}
+.modal-overlay.is-visible { display: flex; }
+.modal-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 24px;
+  width: min(340px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeInModal .25s ease;
+}
+.modal-card h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.modal-note {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.modal-options {
+  display: grid;
+  gap: 12px;
+}
+.modal-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 16px;
+  cursor: pointer;
+  background: #1b2033;
+  color: inherit;
+  text-align: left;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
+}
+.modal-option .icon {
+  font-size: 26px;
+  line-height: 1;
+}
+.modal-option strong {
+  font-size: 15px;
+  display: block;
+}
+.modal-option small {
+  display: block;
+  color: var(--muted);
+  margin-top: 2px;
+  font-size: 12px;
+}
+.modal-option:hover {
+  transform: translateY(-2px);
+  border-color: var(--ev);
+  background: #1f2540;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.modal-card textarea {
+  width: 100%;
+  min-height: 160px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: #0f1320;
+  color: var(--text);
+  padding: 12px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+}
+body.modal-open { overflow: hidden; }
+
+@keyframes fadeInModal {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 footer a {
   color: #a78bfa; /* violeta suave */
   text-decoration: none;

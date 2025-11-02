@@ -11,6 +11,17 @@ const yamlShowBtn = document.getElementById('yamlShowBtn');
 const paletteSearchInput = document.getElementById('paletteSearch');
 let paletteSearchQuery = '';
 
+const importBtn = document.getElementById('importBtn');
+const importOverlay = document.getElementById('importOverlay');
+const importUploadOption = document.getElementById('importUploadOption');
+const importPasteOption = document.getElementById('importPasteOption');
+const importFileInput = document.getElementById('importFileInput');
+const importPasteOverlay = document.getElementById('importPasteOverlay');
+const importPasteTextarea = document.getElementById('importPasteTextarea');
+const importPasteConfirm = document.getElementById('importPasteConfirm');
+const importCloseButtons = document.querySelectorAll('[data-import-close]');
+const importPasteCloseButtons = document.querySelectorAll('[data-paste-close]');
+
 if(paletteSearchInput){
   paletteSearchInput.addEventListener('input', (event) => {
     paletteSearchQuery = event.target.value;
@@ -2428,6 +2439,425 @@ function updateScreenGuard(){
 }
 window.addEventListener('resize', updateScreenGuard);
 window.addEventListener('orientationchange', updateScreenGuard);
+
+/* ---------- Importer ---------- */
+const ACTION_IMPORT_MAP = {
+  message: value => createActionBlock('send_message', { text: String(value ?? '') }),
+  centered_message: value => createActionBlock('send_centered_message', { text: String(value ?? '') }),
+  console_message: value => createActionBlock('send_console_message', { text: String(value ?? '') }),
+  json_message: value => createActionBlock('send_json_message', { text: String(value ?? '') }),
+  mini_message: value => createActionBlock('send_mini_message', { text: String(value ?? '') }),
+  console_command: value => createActionBlock('console_command', { cmd: String(value ?? '') }),
+  player_command: value => createActionBlock('player_command', { cmd: String(value ?? '') }),
+  player_command_as_op: value => createActionBlock('player_command_as_op', { cmd: String(value ?? '') }),
+  player_send_chat: value => createActionBlock('player_send_chat', { cmd: String(value ?? '') }),
+  teleport: value => createActionBlock('teleport', { cmd: String(value ?? '') }),
+  give_potion_effect: value => createActionBlock('give_potion_effect', { cmd: String(value ?? '') }),
+  remove_potion_effect: value => createActionBlock('remove_potion_effect', { cmd: String(value ?? '') }),
+  cancel_event: value => createActionBlock('cancel_event', { value: parseBoolean(value) }),
+  kick: value => createActionBlock('kick', { reason: String(value ?? '') }),
+  playsound: value => createActionBlock('playsound', { cmd: String(value ?? '') }),
+  playsound_resource_pack: value => createActionBlock('playsound_resource_pack', { cmd: String(value ?? '') }),
+  stopsound: value => createActionBlock('stopsound', { cmd: String(value ?? '') }),
+  stopsound_resource_pack: value => createActionBlock('stopsound_resource_pack', { cmd: String(value ?? '') }),
+  send_to_server: value => createActionBlock('send_to_server', { cmd: String(value ?? '') }),
+  actionbar: value => createActionBlock('actionbar', { cmd: String(value ?? '') }),
+  title: value => createActionBlock('title', { cmd: String(value ?? '') }),
+  damage: value => createActionBlock('damage', { point: parseNumber(value) }),
+  set_on_fire: value => createActionBlock('set_on_fire', { ticks: parseNumber(value) }),
+  freeze: value => createActionBlock('freeze', { ticks: parseNumber(value) }),
+  heal: value => createActionBlock('heal', { point: parseNumber(value) }),
+  set_food_level: value => createActionBlock('set_food_level', { point: parseNumber(value) }),
+  throw_directional: value => createActionBlock('throw_directional', { point: parseNumber(value) }),
+  throw_coordinate: value => createActionBlock('throw_coordinate', { cmd: String(value ?? '') }),
+  close_inventory: () => createActionBlock('close_inventory'),
+  clear_inventory: () => createActionBlock('clear_inventory'),
+  wait: value => createActionBlock('wait', { point: parseNumber(value) }),
+  wait_ticks: value => createActionBlock('wait_ticks', { point: parseNumber(value) }),
+  remove_item: value => createActionBlock('remove_item', { cmd: String(value ?? '') }),
+  remove_item_slot: value => createActionBlock('remove_item_slot', { cmd: String(value ?? '') }),
+  firework: value => createActionBlock('firework', { cmd: String(value ?? '') }),
+  lightning_strike: value => createActionBlock('lightning_strike', { cmd: String(value ?? '') }),
+  particle: value => createActionBlock('particle', { cmd: String(value ?? '') }),
+  give_item: value => createActionBlock('give_item', { cmd: String(value ?? '') }),
+  drop_item: value => createActionBlock('drop_item', { cmd: String(value ?? '') }),
+  set_block: value => createActionBlock('set_block', { cmd: String(value ?? '') }),
+  summon: value => createActionBlock('summon', { cmd: String(value ?? '') }),
+  call_event: value => createActionBlock('call_event', { cmd: String(value ?? '') }),
+  execute_action_group: value => createActionBlock('execute_action_group', { cmd: String(value ?? '') }),
+  keep_items: value => createActionBlock('keep_items', { mode: parseKeepItemsValue(value) }),
+  cancel_drop: value => createActionBlock('cancel_drop', { value: parseBoolean(value) }),
+  set_damage: value => {
+    const parsed = parseDamageValue(value);
+    return createActionBlock('set_damage', parsed);
+  },
+  hide_join_message: value => createActionBlock('hide_join_message', { value: parseBoolean(value) }),
+  hide_leave_message: value => createActionBlock('hide_leave_message', { value: parseBoolean(value) }),
+  set_death_message: value => createActionBlock('set_death_message', { text: String(value ?? '') }),
+  prevent_join: value => createActionBlock('prevent_join', { text: String(value ?? '') }),
+  set_item: value => createActionBlock('set_item', { text: String(value ?? '') }),
+  set_event_xp: value => createActionBlock('set_event_xp', { points: parseNumber(value) }),
+  tab_complete: value => createActionBlock('tab_complete', { text: String(value ?? '') })
+};
+
+function parseBoolean(value){
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  const str = String(value ?? '').trim().toLowerCase();
+  if (!str) return false;
+  return ['true','yes','1','on'].includes(str);
+}
+
+function parseNumber(value){
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const num = Number(String(value ?? '').trim());
+  return Number.isFinite(num) ? num : 0;
+}
+
+function parseDamageValue(value){
+  if (typeof value === 'object' && value) {
+    const out = { value: parseNumber(value.value), mode: value.mode === 'percent' ? 'percent' : 'points' };
+    return out;
+  }
+  const str = String(value ?? '').trim();
+  if (!str) return { value: 0, mode: 'points' };
+  if (str.endsWith('%')) {
+    return { value: parseNumber(str.slice(0, -1)), mode: 'percent' };
+  }
+  return { value: parseNumber(str), mode: 'points' };
+}
+
+function parseKeepItemsValue(value){
+  const allowed = ['items', 'xp', 'all'];
+  const mode = String(value ?? '').trim().toLowerCase();
+  return allowed.includes(mode) ? mode : 'items';
+}
+
+function resolveActionKind(subtype){
+  for (const kind of ACTION_KINDS()){
+    if (REGISTRY[kind]?.[subtype]) return kind;
+  }
+  return 'action';
+}
+
+function createActionBlock(subtype, overrides = {}){
+  const kind = resolveActionKind(subtype);
+  const meta = REGISTRY[kind]?.[subtype];
+  if (!meta) return null;
+  const base = deepClone(meta.defaults || {});
+  const data = Object.assign(base, overrides || {});
+  return { id: uid(), kind, subtype, data };
+}
+
+function normalizeList(value){
+  if (Array.isArray(value)) return value;
+  if (value === undefined || value === null) return [];
+  return [value];
+}
+
+function stripQuotes(value){
+  if (typeof value !== 'string') return value;
+  let out = value.trim();
+  if ((out.startsWith('"') && out.endsWith('"')) || (out.startsWith("'") && out.endsWith("'"))){
+    out = out.slice(1, -1).trim();
+  }
+  return out;
+}
+
+const CONDITION_OPERATORS = [
+  'equalsIgnoreCase', '!equalsIgnoreCase', 'startsWith', '!startsWith',
+  'equals', '!equals', 'contains', '!contains', 'endsWith', '!endsWith',
+  'matches', '!matches', '>=', '<=', '==', '!=', '>', '<'
+];
+
+function parseConditionEntry(entry){
+  if (typeof entry !== 'string') return null;
+  const clean = stripQuotes(entry);
+  const str = String(clean ?? '').trim();
+  if (!str) return null;
+  for (const op of CONDITION_OPERATORS){
+    const pattern = ` ${op} `;
+    const idx = str.indexOf(pattern);
+    if (idx >= 0){
+      const left = str.slice(0, idx).trim();
+      const right = str.slice(idx + pattern.length).trim();
+      if (!left || !right) continue;
+      return { left, op, right };
+    }
+  }
+  return null;
+}
+
+function parseActionLine(entry, warnings, ctx){
+  if (typeof entry !== 'string'){
+    warnings.push(`Entrada de acción inválida ${ctx}`);
+    return null;
+  }
+  const clean = stripQuotes(entry);
+  const str = String(clean ?? '').trim();
+  if (!str) return null;
+  const colonIdx = str.indexOf(':');
+  let key = '', value = '';
+  if (colonIdx === -1){
+    key = str.toLowerCase();
+    value = '';
+  } else {
+    key = str.slice(0, colonIdx).trim().toLowerCase();
+    value = str.slice(colonIdx + 1).trim();
+  }
+  const importer = ACTION_IMPORT_MAP[key];
+  if (!importer){
+    warnings.push(`Acción no soportada "${str}" ${ctx}`);
+    return null;
+  }
+  const block = importer(value);
+  if (!block){
+    warnings.push(`No se pudo importar la acción "${str}" ${ctx}`);
+    return null;
+  }
+  return block;
+}
+
+function parseSettingsForEvent(ev, raw, warnings){
+  if (raw.repetitive_time !== undefined){
+    const meta = REGISTRY.setting?.repetitive_time;
+    if (meta){
+      ev.blocks.push({
+        id: uid(),
+        kind: 'setting',
+        subtype: 'repetitive_time',
+        data: { ticks: parseNumber(raw.repetitive_time) }
+      });
+    }
+  }
+  if (raw.ignore_with_permission){
+    const meta = REGISTRY.setting?.ignore_with_permission;
+    if (meta){
+      ev.blocks.push({
+        id: uid(),
+        kind: 'setting',
+        subtype: 'ignore_with_permission',
+        data: { perm: String(raw.ignore_with_permission ?? '') }
+      });
+    }
+  }
+  if (raw.one_time !== undefined){
+    warnings.push(`El ajuste "one_time" del evento "${ev.name}" no es editable aún en el builder.`);
+  }
+}
+
+function buildEventFromConfig(name, raw, warnings){
+  const evt = newEventSkeleton(name);
+  evt.name = name;
+  evt.type = typeof raw.type === 'string' ? raw.type : null;
+  evt.blocks = [];
+  evt.actionGroups = [];
+
+  if (!evt.type){
+    warnings.push(`El evento "${name}" no tiene un "type" válido.`);
+  }
+
+  parseSettingsForEvent(evt, raw, warnings);
+
+  let conditionList = [];
+  if (Array.isArray(raw.conditions)) {
+    conditionList = raw.conditions;
+  } else if (raw.conditions && typeof raw.conditions === 'object') {
+    conditionList = Object.values(raw.conditions).flatMap(val => normalizeList(val));
+  } else {
+    conditionList = normalizeList(raw.conditions);
+  }
+  conditionList.forEach((entry, idx) => {
+    const parsed = parseConditionEntry(entry);
+    if (!parsed){
+      warnings.push(`No se pudo interpretar la condición #${idx + 1} del evento "${name}".`);
+      return;
+    }
+    evt.blocks.push({
+      id: uid(),
+      kind: 'condition',
+      subtype: 'basic_condition',
+      data: parsed
+    });
+  });
+
+  const actionsNode = raw.actions;
+  if (actionsNode && typeof actionsNode === 'object' && !Array.isArray(actionsNode)){
+    Object.entries(actionsNode).forEach(([groupName, entries]) => {
+      const group = { id: uid(), name: String(groupName || 'group'), blocks: [] };
+      normalizeList(entries).forEach((line, idx) => {
+        const block = parseActionLine(line, warnings, `en el grupo "${groupName}" del evento "${name}"`);
+        if (block) group.blocks.push(block);
+      });
+      evt.actionGroups.push(group);
+    });
+  } else if (Array.isArray(actionsNode)){
+    const group = { id: uid(), name: 'default', blocks: [] };
+    actionsNode.forEach((line, idx) => {
+      const block = parseActionLine(line, warnings, `en el evento "${name}"`);
+      if (block) group.blocks.push(block);
+    });
+    evt.actionGroups.push(group);
+  }
+
+  if (!evt.actionGroups.length){
+    evt.actionGroups.push({ id: uid(), name: 'default', blocks: [] });
+  }
+
+  return evt;
+}
+
+function convertConfigToState(payload){
+  const root = payload?.Events || payload?.events;
+  if (!root || typeof root !== 'object'){
+    throw new Error('No se encontró la sección "Events".');
+  }
+  const warnings = [];
+  const events = [];
+  Object.entries(root).forEach(([name, raw]) => {
+    if (!raw || typeof raw !== 'object'){
+      warnings.push(`El evento "${name}" fue ignorado por tener un formato inválido.`);
+      return;
+    }
+    events.push(buildEventFromConfig(String(name), raw, warnings));
+  });
+  if (!events.length){
+    throw new Error('No se encontraron eventos válidos para importar.');
+  }
+  return { events, warnings };
+}
+
+function parseConfigPayload(text){
+  const trimmed = String(text ?? '').trim();
+  if (!trimmed) throw new Error('El contenido está vacío.');
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')){
+    return JSON.parse(trimmed);
+  }
+  if (window.jsyaml && typeof window.jsyaml.load === 'function'){
+    return window.jsyaml.load(trimmed);
+  }
+  throw new Error('Formato no reconocido. No se pudo cargar YAML.');
+}
+
+function anyModalVisible(){
+  return document.querySelector('.modal-overlay.is-visible');
+}
+
+function toggleModalOverlay(el, show){
+  if (!el) return;
+  if (show) el.classList.add('is-visible');
+  else el.classList.remove('is-visible');
+  document.body.classList.toggle('modal-open', Boolean(anyModalVisible()));
+}
+
+function closeImportModals(){
+  toggleModalOverlay(importOverlay, false);
+  toggleModalOverlay(importPasteOverlay, false);
+  if (importPasteTextarea) importPasteTextarea.value = '';
+}
+
+function handleImportText(text, sourceLabel){
+  try {
+    const payload = parseConfigPayload(text);
+    const { events, warnings } = convertConfigToState(payload);
+    if (state.events.length && !confirm('Importing will replace the current builder content. Continue?')){
+      return;
+    }
+    state.events = events;
+    render();
+    applyResponsiveYAML();
+    updateScreenGuard();
+    closeImportModals();
+    let message = `Imported ${events.length} event${events.length === 1 ? '' : 's'} successfully.`;
+    if (warnings.length){
+      message += `\nWarnings:\n- ${warnings.join('\n- ')}`;
+    }
+    alert(message);
+  } catch (err){
+    alert(`No se pudo importar${sourceLabel ? ` (${sourceLabel})` : ''}: ${err.message}`);
+  }
+}
+
+if (importBtn){
+  importBtn.addEventListener('click', () => {
+    if (importPasteTextarea) importPasteTextarea.value = '';
+    toggleModalOverlay(importPasteOverlay, false);
+    toggleModalOverlay(importOverlay, true);
+  });
+}
+
+importCloseButtons.forEach(btn => btn.addEventListener('click', () => closeImportModals()));
+importPasteCloseButtons.forEach(btn => btn.addEventListener('click', () => {
+  toggleModalOverlay(importPasteOverlay, false);
+  toggleModalOverlay(importOverlay, true);
+}));
+
+if (importOverlay){
+  importOverlay.addEventListener('click', (e) => {
+    if (e.target === importOverlay) closeImportModals();
+  });
+}
+
+if (importPasteOverlay){
+  importPasteOverlay.addEventListener('click', (e) => {
+    if (e.target === importPasteOverlay){
+      toggleModalOverlay(importPasteOverlay, false);
+      toggleModalOverlay(importOverlay, true);
+    }
+  });
+}
+
+if (importUploadOption){
+  importUploadOption.addEventListener('click', () => {
+    if (importFileInput) importFileInput.click();
+  });
+}
+
+if (importFileInput){
+  importFileInput.addEventListener('change', () => {
+    const file = importFileInput.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      handleImportText(reader.result, file.name);
+      importFileInput.value = '';
+    };
+    reader.onerror = () => {
+      alert(`No se pudo leer el archivo "${file.name}".`);
+      importFileInput.value = '';
+    };
+    reader.readAsText(file);
+  });
+}
+
+if (importPasteOption){
+  importPasteOption.addEventListener('click', () => {
+    toggleModalOverlay(importOverlay, false);
+    toggleModalOverlay(importPasteOverlay, true);
+    if (importPasteTextarea){
+      importPasteTextarea.value = '';
+      setTimeout(() => importPasteTextarea.focus(), 50);
+    }
+  });
+}
+
+if (importPasteConfirm){
+  importPasteConfirm.addEventListener('click', () => {
+    const text = importPasteTextarea ? importPasteTextarea.value : '';
+    handleImportText(text, 'texto pegado');
+  });
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && anyModalVisible()){
+    if (importPasteOverlay && importPasteOverlay.classList.contains('is-visible')){
+      toggleModalOverlay(importPasteOverlay, false);
+      if (importOverlay) toggleModalOverlay(importOverlay, true);
+    } else {
+      closeImportModals();
+    }
+  }
+});
 
 /* ---------- Watermark sólo en export ---------- */
 const WATERMARK_ENABLED = true;
