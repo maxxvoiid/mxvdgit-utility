@@ -304,6 +304,13 @@ const REGISTRY = {
           Teleports the player/entity. Use this format: <code>world;x;y;z;yaw;pitch</code>
         </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
+
+        const note = renderNote(
+          `Works with all living entities when using the <strong>to_target</strong> action tag.`,
+          { tone: 'success', icon: 'circleCheckBig', dismissible: false }
+        );
+        body.prepend(note);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
       toYAML(block){ return `'teleport: ${escQ(block.data.cmd)}'`; }
@@ -316,6 +323,13 @@ const REGISTRY = {
               Gives a potion effect to the player/entity. Use this format: "effect;duration_in_ticks;level;show_particles;show_icon"
           </small>
           <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
+
+        const note = renderNote(
+          `Works with all living entities when using the <strong>to_target</strong> action tag.`,
+          { tone: 'success', icon: 'circleCheckBig', dismissible: false }
+        );
+        body.prepend(note);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
       toYAML(block){ return `'give_potion_effect: ${escQ(block.data.cmd)}'`; }
@@ -328,6 +342,13 @@ const REGISTRY = {
               Removes a potion effect from the player/entity. Use "all" to remove all potion effects.
           </small>
           <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
+
+        const note = renderNote(
+          `Works with all living entities when using the <strong>to_target</strong> action tag.`,
+          { tone: 'success', icon: 'circleCheckBig', dismissible: false }
+        );
+        body.prepend(note);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
       toYAML(block){ return `'remove_potion_effect: ${escQ(block.data.cmd)}'`; }
@@ -495,6 +516,13 @@ const REGISTRY = {
         <small style="opacity:.7;font-size:12px">
             1 point = 1 half-heart. Example: 5 = 2.5 hearts.
         </small>`;
+
+        const note = renderNote(
+          `Works with all living entities when using the <strong>to_target</strong> action tag.`,
+          { tone: 'success', icon: 'circleCheckBig', dismissible: false }
+        );
+        body.prepend(note);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.point = parseInt(e.target.value||'0',10); update(); });
       },
       toYAML(block){ return `'damage: ${block.data.point}'`; }
@@ -512,6 +540,13 @@ const REGISTRY = {
         <small style="opacity:.7;font-size:12px">
             20 ticks = 1 second. Example: 100 = 5 seconds.
         </small>`;
+
+        const note = renderNote(
+          `Works with all living entities when using the <strong>to_target</strong> action tag.`,
+          { tone: 'success', icon: 'circleCheckBig', dismissible: false }
+        );
+        body.prepend(note);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.ticks = parseInt(e.target.value||'0',10); update(); });
       },
       toYAML(block){ return `'set_on_fire: ${block.data.ticks}'`; }
@@ -529,6 +564,13 @@ const REGISTRY = {
         <small style="opacity:.7;font-size:12px">
             20 ticks = 1 second. Example: 100 = 5 seconds.
         </small>`;
+
+        const note = renderNote(
+          `Works with all living entities when using the <strong>to_target</strong> action tag.`,
+          { tone: 'success', icon: 'circleCheckBig', dismissible: false }
+        );
+        body.prepend(note);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.ticks = parseInt(e.target.value||'0',10); update(); });
       },
       toYAML(block){ return `'freeze: ${block.data.ticks}'`; }
@@ -546,6 +588,13 @@ const REGISTRY = {
         <small style="opacity:.7;font-size:12px">
             1 point = 1 half-heart. Example: 5 = 2.5 hearts.
         </small>`;
+
+        const note = renderNote(
+          `Works with all living entities when using the <strong>to_target</strong> action tag.`,
+          { tone: 'success', icon: 'circleCheckBig', dismissible: false }
+        );
+        body.prepend(note);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.point = parseInt(e.target.value||'0',10); update(); });
       },
       toYAML(block){ return `'heal: ${block.data.point}'`; }
@@ -577,6 +626,13 @@ const REGISTRY = {
         <div class="row single">
           <input type="number" min="1" step="1" value="${block.data.point}" />
         </div>`;
+
+        const note = renderNote(
+          `Works with all living entities when using the <strong>to_target</strong> action tag.`,
+          { tone: 'success', icon: 'circleCheckBig', dismissible: false }
+        );
+        body.prepend(note);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.point = parseInt(e.target.value||'0',10); update(); });
       },
       toYAML(block){ return `'throw_directional: ${block.data.point}'`; }
@@ -590,6 +646,13 @@ const REGISTRY = {
           Use this format: <code>&lt;strength_x&gt;;&lt;strength_y&gt;;&lt;strength_z&gt;</code>
         </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
+
+        const note = renderNote(
+          `Works with all living entities when using the <strong>to_target</strong> action tag.`,
+          { tone: 'success', icon: 'circleCheckBig', dismissible: false }
+        );
+        body.prepend(note);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
       toYAML(block){ return `'throw_coordinate: ${escQ(block.data.cmd)}'`; }
@@ -662,6 +725,13 @@ const REGISTRY = {
           <code>&lt;type&gt;;&lt;amount&gt;;datavalue:&lt;datavalue&gt;;name:&lt;name&gt;;lorecontains:&lt;lore_line&gt;</code>
         </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
+
+        const note = renderNote(
+          `Datavalue, name and lorecontains attributes are <strong>OPTIONAL</strong>. Don't use color formatting.`,
+          { tone: 'warn', icon: 'alert', dismissible: false }
+        );
+        body.prepend(note);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
       toYAML(block){ return `'remove_item: ${escQ(block.data.cmd)}'`; }
@@ -674,6 +744,7 @@ const REGISTRY = {
           Removes items from a slot. Use this format: <code>&lt;slot&gt;;&lt;amount&gt;</code>
         </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
       toYAML(block){ return `'remove_item_slot: ${escQ(block.data.cmd)}'`; }
@@ -687,6 +758,13 @@ const REGISTRY = {
           <code>colors:&lt;color1&gt;,&lt;color2&gt; type:&lt;type&gt; fade:&lt;color1&gt;,&lt;color2&gt; &lt;propertyN&gt;:&lt;valueN&gt;</code>
         </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
+
+        const note = renderNote(
+          `Works with all living entities when using the <strong>to_target</strong> action tag.`,
+          { tone: 'success', icon: 'circleCheckBig', dismissible: false }
+        );
+        body.prepend(note);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
       toYAML(block){ return `'firework: ${escQ(block.data.cmd)}'`; }
@@ -712,6 +790,13 @@ const REGISTRY = {
           <code>effect:&lt;effect_name&gt; offset:&lt;x&gt;;&lt;y&gt;;&lt;z&gt; speed:&lt;speed&gt; amount:&lt;amount&gt; force:&lt;true/false&gt;</code>
         </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
+
+        const note = renderNote(
+          `Works with all living entities when using the <strong>to_target</strong> action tag.`,
+          { tone: 'success', icon: 'circleCheckBig', dismissible: false }
+        );
+        body.prepend(note);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
       toYAML(block){ return `'particle: ${escQ(block.data.cmd)}'`; }
@@ -775,6 +860,13 @@ const REGISTRY = {
           Executes another event. Use this format: <code>&lt;event_name&gt;;%variable1%=&lt;value1&gt;;&lt;variableN&gt;=&lt;valueN&gt;</code>
         </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
+
+        const info = renderNote(
+          `You can pass multiple variables to be used in a "call" event, but they are optional.`,
+          { tone: 'info', icon: 'badgeInfo', dismissible: false }
+        );
+        body.prepend(info);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
       toYAML(block){ return `'call_event: ${escQ(block.data.cmd)}'`; }
@@ -788,6 +880,13 @@ const REGISTRY = {
           <code>&lt;group1&gt;:&lt;prob1&gt;;&lt;groupN&gt;:&lt;probN&gt;</code>
         </small>
         <div class="row single"><input type="text" value="${block.data.cmd}" /></div>`;
+
+        const info = renderNote(
+          `If you only want to execute a single action group, not randomly, you can do it by using: <code>execute_action_group: &lt;group1&gt;:100</code>`,
+          { tone: 'info', icon: 'badgeInfo', dismissible: false }
+        );
+        body.prepend(info);
+
         body.querySelector('input').addEventListener('input', e=>{ block.data.cmd = e.target.value; update(); });
       },
       toYAML(block){ return `'execute_action_group: ${escQ(block.data.cmd)}'`; }
@@ -900,6 +999,12 @@ const REGISTRY = {
             Drag an action here. It will execute the action for the target of the event.
           </small>
         `;
+
+        const note = renderNote(
+          `This can target both players and living entities, so you can use certain actions on entities as well.`,
+          { tone: 'success', icon: 'circleCheckBig', dismissible: false }
+        );
+        body.prepend(note);
 
         // Zona de reemplazo que cubre todo el contenido (permite drop para reemplazar)
         const replaceZone = createZone(ctx.event, {
@@ -1212,6 +1317,12 @@ const REGISTRY = {
             <input type="text" value="${block.data.group || 'group1'}" placeholder="group1" />
           </div>
         `;
+
+        const info = renderNote(
+          `You can create multiple <b>to condition groups</b> following the same format as the usual conditions, excluding the "execute" option.`,
+          { tone: 'info', icon: 'badgeInfo', dismissible: false }
+        );
+        body.prepend(info);
 
         // input de grupo
         const inp = body.querySelector('input');
@@ -1527,29 +1638,174 @@ const REGISTRY = {
 
   setting: {
     __meta: { label: 'Settings', color: 'var(--setting)' },
-    repetitive_time: {
-      label:'Repetitive Time', className:'setting',
-      defaults:{ ticks:20 },
-      settingKey:'repetitive_time',
-      render(body, block, update, ctx){
-        body.innerHTML = `<div class="row single">
-          <input type="number" min="1" step="1" value="${block.data.ticks}" />
-        </div>
-        <small style="opacity:.7;font-size:12px">
-            20 ticks = 1 second. Example: 100 = 5 seconds.
-        </small>`;
-        body.querySelector('input').addEventListener('input', e=>{ block.data.ticks = parseInt(e.target.value||'0',10); update(); });
-      }
-    },
     ignore_with_permission: {
       label:'Ignore With Permission', className:'setting',
       defaults:{ perm:'conditionalevents.ignore.example' },
       settingKey:'ignore_with_permission',
       render(body, block, update, ctx){
-        body.innerHTML = `<div class="row single"><input type="text" value="${block.data.perm}" placeholder="conditionalevents.ignore.<id>" /></div>`;
+        body.innerHTML = `
+        <small style="opacity:1;font-size:14px;display:block;margin-bottom:8px">
+            You can set a permission to completely ignore this event. If the player accomplishes the conditions having this permission, actions will not be executed for him.
+          </small>
+        <div class="row single">
+          <input type="text" value="${block.data.perm}" placeholder="conditionalevents.ignore.<id>" />
+        </div>`;
         body.querySelector('input').addEventListener('input', e=>{ block.data.perm = e.target.value; update(); });
       }
-    }
+    },
+    ignore_if_cancelled: {
+      label: 'Ignore If Cancelled',
+      className: 'setting',
+      defaults: { value: true },
+      settingKey: 'ignore_if_cancelled',
+      render(body, block, update, ctx) {
+        body.innerHTML = `
+          <small style="opacity:1;font-size:14px">
+            When this option is enabled, it will prevent the execution if the event was already cancelled by another plugin.
+          </small>
+          <div class="row single" style="align-items:center">
+            <select>
+              <option value="true"  ${block.data.value ? 'selected' : ''}>true</option>
+              <option value="false" ${!block.data.value ? 'selected' : ''}>false</option>
+            </select>
+          </div>
+        `;
+
+        body.querySelector('select').addEventListener('change', e => {
+          block.data.value = (e.target.value === 'true');
+          update();
+        });
+      }
+    },
+    allow_math_formulas_in_conditions: {
+      label: 'Allow Math formulas in Conditions',
+      className: 'setting',
+      defaults: { value: true },
+      settingKey: 'allow_math_formulas_in_conditions',
+      render(body, block, update, ctx) {
+        body.innerHTML = `
+          <small style="opacity:1;font-size:14px">
+            If you want to compare formulas in the conditions of an event, you must enable this option.
+          </small>
+          <div class="row single" style="align-items:center">
+            <select>
+              <option value="true"  ${block.data.value ? 'selected' : ''}>true</option>
+              <option value="false" ${!block.data.value ? 'selected' : ''}>false</option>
+            </select>
+          </div>
+        `;
+
+        body.querySelector('select').addEventListener('change', e => {
+          block.data.value = (e.target.value === 'true');
+          update();
+        });
+      }
+    },
+    one_time: {
+      label: 'One Time',
+      className: 'setting',
+      defaults: { value: true },
+      settingKey: 'one_time',
+      render(body, block, update, ctx) {
+        body.innerHTML = `
+          <small style="opacity:1;font-size:14px">
+            If is set to true, players will execute the actions of this event just once. You can also set an action group that will execute when a player accomplishes the conditions again, but already had executed the default actions.
+          </small>
+          <div class="row single" style="align-items:center">
+            <select>
+              <option value="true"  ${block.data.value ? 'selected' : ''}>true</option>
+              <option value="false" ${!block.data.value ? 'selected' : ''}>false</option>
+            </select>
+          </div>
+        `;
+
+        const note = renderNote(
+          `The action group <strong>MUST</strong> be called "one_time".`,
+          { tone: 'warn', icon: 'alert', dismissible: false }
+        );
+        body.prepend(note);
+
+        body.querySelector('select').addEventListener('change', e => {
+          block.data.value = (e.target.value === 'true');
+          update();
+        });
+      }
+    },
+    cooldown: {
+      label:'Cooldown', className:'setting',
+      defaults:{ seconds:20 },
+      settingKey:'cooldown',
+      render(body, block, update, ctx){
+        body.innerHTML = `
+        <small style="opacity:1;font-size:14px;display:block;margin-bottom:8px">
+            Here you can define a cooldown for this event. If the player accomplishes the conditions, the player will need to wait certain time before executing the actions again. Write the cooldown in seconds. You can also set an action group that will execute when a players accomplishes the conditions again but is in cooldown.
+          </small>
+        <div class="row single">
+          <input type="number" min="1" step="1" value="${block.data.seconds}" />
+        </div>`;
+
+        const note = renderNote(
+          `The action group <strong>MUST</strong> be called "cooldown".`,
+          { tone: 'warn', icon: 'alert', dismissible: false }
+        );
+        body.prepend(note);
+
+        const info = renderNote(
+          `OP players will bypass the cooldown so make sure you are not OP when testing this feature.`,
+          { tone: 'info', icon: 'badgeInfo', dismissible: false }
+        );
+        body.prepend(info);
+
+        body.querySelector('input').addEventListener('input', e=>{ block.data.seconds = parseInt(e.target.value||'0',10); update(); });
+      }
+    },
+    enabled: {
+      label: 'Enabled',
+      className: 'setting',
+      defaults: { value: true },
+      settingKey: 'enabled',
+      render(body, block, update, ctx) {
+        body.innerHTML = `
+          <small style="opacity:1;font-size:14px">
+            Set this option to false to disable the event without removing it from the config. If you want the event to be active just set it to true or remove this option.
+          </small>
+          <div class="row single" style="align-items:center">
+            <select>
+              <option value="true"  ${block.data.value ? 'selected' : ''}>true</option>
+              <option value="false" ${!block.data.value ? 'selected' : ''}>false</option>
+            </select>
+          </div>
+        `;
+
+        body.querySelector('select').addEventListener('change', e => {
+          block.data.value = (e.target.value === 'true');
+          update();
+        });
+      }
+    },
+    repetitive_time: {
+      label:'Repetitive Time', className:'setting',
+      defaults:{ ticks:20 },
+      settingKey:'repetitive_time',
+      render(body, block, update, ctx){
+        const allowed = new Set(['repetitive','repetitive_server']);
+        const notice = renderSettingEventCompatibilityNotice(allowed, ctx);
+
+        body.innerHTML = `
+        <small style="opacity:1;font-size:14px;display:block;margin-bottom:8px">
+            This setting defines the period of time in ticks when checking the conditions.
+          </small>
+        <div class="row single">
+          <input type="number" min="1" step="1" value="${block.data.ticks}" />
+        </div>
+        <small style="opacity:.7;font-size:12px">
+            20 ticks = 1 second. Example: 100 = 5 seconds.
+        </small>`;
+        
+        body.prepend(notice);
+        body.querySelector('input').addEventListener('input', e=>{ block.data.ticks = parseInt(e.target.value||'0',10); update(); });
+      }
+    },
   }
 };
 
@@ -1571,6 +1827,52 @@ const ICONS = {
   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
   <path d="M3 6h18"/>
   <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+</svg>`,
+  cloudUpload: `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+     fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round"
+     class="lucide lucide-cloud-upload">
+  <path d="M12 13v8"/>
+  <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+  <path d="m8 17 4-4 4 4"/>
+</svg>`,
+  clipboardPaste: `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+     fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round"
+     class="lucide lucide-clipboard-paste">
+  <path d="M11 14h10"/>
+  <path d="M16 4h2a2 2 0 0 1 2 2v1.344"/>
+  <path d="m17 18 4-4-4-4"/>
+  <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 1.793-1.113"/>
+  <rect x="8" y="2" width="8" height="4" rx="1"/>
+</svg>`,
+  circleCheckBig: `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+     fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round"
+     class="lucide lucide-circle-check-big">
+  <path d="M21.801 10A10 10 0 1 1 17 3.335"/>
+  <path d="m9 11 3 3L22 4"/>
+</svg>`,
+  badgeInfo: `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+     fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round"
+     class="lucide lucide-badge-info">
+  <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
+  <line x1="12" x2="12" y1="16" y2="12"/>
+  <line x1="12" x2="12.01" y1="8" y2="8"/>
+</svg>`,
+  octagonAlert: `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+     fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round"
+     class="lucide lucide-octagon-alert">
+  <path d="M12 16h.01"/>
+  <path d="M12 8v4"/>
+  <path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z"/>
 </svg>`
 };
 
@@ -1578,7 +1880,7 @@ const ICONS = {
 window.addEventListener("beforeunload", (e) => {
   if (state.events.length > 0) {
     e.preventDefault();
-    e.returnValue = "Si recargas la página, perderás todos los datos del builder.";
+    e.returnValue = "If you reload the page, you will lose all the data in the builder.";
     return e.returnValue;
   }
 });
@@ -1615,6 +1917,36 @@ function onlyOnEventsNotice(allowed, {tone='amber', style='code'} = {}){
 }
 
 // 🔧 Renderiza un aviso de compatibilidad con eventos
+const NOTICE_TONES = {
+  info:    '#60a5fa',
+  success: '#22c55e',
+  warn:    '#facc15',
+  error:   '#f87171',
+  violet:  '#a78bfa'
+};
+
+function renderNote(html, { tone='info', icon='info', compact=false, dismissible=false } = {}) {
+  const wrap = document.createElement('div');
+  wrap.className = 'notice';
+  wrap.style.setProperty('--ink', NOTICE_TONES[tone] || tone); // acepta hex custom
+  wrap.innerHTML = `
+    <div class="icon" aria-hidden="true">${ICONS[icon] || ICONS.alert}</div>
+    <div class="content">${html}</div>
+  `;
+  if (compact) wrap.style.padding = '2px 2px';
+
+  if (dismissible) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'icon-btn';
+    btn.style.marginLeft = 'auto';
+    btn.innerHTML = '✕';
+    btn.addEventListener('click', () => wrap.remove());
+    wrap.appendChild(btn);
+  }
+  return wrap;
+}
+
 function renderEventCompatibilityNotice(allowed, ctx, {style='code'} = {}) {
   const allowedArr = Array.from(allowed || []);
   const currentType = ctx?.event?.type || '';
@@ -1633,6 +1965,34 @@ function renderEventCompatibilityNotice(allowed, ctx, {style='code'} = {}) {
     <div class="icon" aria-hidden="true">${ICONS.alert}</div>
     <div class="content">
       This action only takes effect on ${eventsHTML} events.
+      ${notApplies
+        ? `<br><span style="opacity:.8">
+             Current event: <code>${currentType || 'none'}</code>. It won’t take effect.
+           </span>`
+        : ''}
+    </div>
+  `;
+  return wrap;
+}
+
+function renderSettingEventCompatibilityNotice(allowed, ctx, {style='code'} = {}) {
+  const allowedArr = Array.from(allowed || []);
+  const currentType = ctx?.event?.type || '';
+  const notApplies = !allowedArr.includes(currentType);
+
+  const tone = notApplies ? 'error' : 'warn';
+  const wrap = document.createElement('div');
+  wrap.className = `notice ${tone === 'error' ? 'error' : 'warn'}`;
+
+  // construimos lista de eventos aceptados
+  const eventsHTML = allowedArr
+    .map(k => `<code><strong>${k}</strong></code>`)
+    .join(' / ');
+
+  wrap.innerHTML = `
+    <div class="icon" aria-hidden="true">${ICONS.alert}</div>
+    <div class="content">
+      This setting only takes effect on ${eventsHTML} events.
       ${notApplies
         ? `<br><span style="opacity:.8">
              Current event: <code>${currentType || 'none'}</code>. It won’t take effect.
@@ -2218,7 +2578,7 @@ function render(){
         </div>`;
       const body = document.createElement('div');
       body.className = 'block-body';
-      meta?.render?.(body, b, updateYAML);
+      meta?.render?.(body, b, updateYAML, { event: ev });
       block.appendChild(body);
       const [up,down,del] = block.querySelectorAll('.icon-btn');
       up.addEventListener("click", ()=>moveBlock(ev.id,b.id,'up'));
@@ -2267,19 +2627,19 @@ function render(){
       head.innerHTML = `
         <div style="display:flex; gap:8px; align-items:center;">
           <div style="font-weight:700">Group:</div>
-          <input class="group-name" value="${g.name}" title="Nombre del action group"/>
+          <input class="group-name" value="${g.name}" title="Name of the action group"/>
         </div>
         <div class="tools">
-          <button class="icon-btn" title="Subir grupo">▲</button>
-          <button class="icon-btn" title="Bajar grupo">▼</button>
-          <button class="icon-btn danger" title="Eliminar grupo">${ICONS.trash}</button>
+          <button class="icon-btn" title="Move group up">▲</button>
+          <button class="icon-btn" title="Move group down">▼</button>
+          <button class="icon-btn danger" title="Delete group">${ICONS.trash}</button>
         </div>`;
       const [btnUp, btnDown, btnDel] = head.querySelectorAll('.icon-btn');
       head.querySelector('input').addEventListener('input', e=>renameActionGroup(ev.id, g.id, e.target.value));
       btnUp.addEventListener('click', ()=>moveActionGroup(ev.id, g.id, 'up'));
       btnDown.addEventListener('click', ()=>moveActionGroup(ev.id, g.id, 'down'));
       btnDel.addEventListener('click', ()=>{
-        if(confirm(`¿Eliminar el grupo "${g.name}"?`)) removeActionGroup(ev.id, g.id);
+        if(confirm(`Delete the group "${g.name}"?`)) removeActionGroup(ev.id, g.id);
       });
       groupCard.appendChild(head);
 
@@ -2293,9 +2653,9 @@ function render(){
         block.innerHTML = `<div class="block-head">
             <div>${title}</div>
             <div class="tools">
-              <button class="icon-btn" title="Subir">▲</button>
-              <button class="icon-btn" title="Bajar">▼</button>
-              <button class="icon-btn" title="Eliminar">${ICONS.trash}</button>
+              <button class="icon-btn" title="Move up">▲</button>
+              <button class="icon-btn" title="Move down">▼</button>
+              <button class="icon-btn" title="Delete">${ICONS.trash}</button>
             </div>
           </div>`;
         const body = document.createElement('div');
@@ -2350,11 +2710,16 @@ function buildYAML(){
       if(meta?.settingKey){
         settings[meta.settingKey] =
           ('ticks' in b.data) ? b.data.ticks :
-          ('perm'  in b.data) ? b.data.perm  : b.data;
+          ('perm'  in b.data) ? b.data.perm  :
+          ('value' in b.data) ? b.data.value :
+          b.data;
       }
     });
-    if(settings.repetitive_time !== undefined) lines.push(`    repetitive_time: ${settings.repetitive_time}`);
-    if(settings.ignore_with_permission)       lines.push(`    ignore_with_permission: ${settings.ignore_with_permission}`);
+    Object.entries(settings).forEach(([k, v]) => {
+      if (v !== undefined && v !== '') {
+        lines.push(`    ${k}: ${v}`); // true/false/numero/string salen bien en YAML
+      }
+    });
 
     // conditions (desde blocks)
     const conds = ev.blocks.filter(b=>b.kind==='condition').map(b=>{
@@ -2500,6 +2865,102 @@ const ACTION_IMPORT_MAP = {
   tab_complete: value => createActionBlock('tab_complete', { text: String(value ?? '') })
 };
 
+const WRAPPER_ACTION_KEYS = new Set(['to_all', 'to_target', 'to_range', 'to_player', 'to_condition']);
+
+function createActionToBlock(subtype){
+  const meta = REGISTRY.actionTo?.[subtype];
+  if (!meta) return null;
+  return {
+    id: uid(),
+    kind: 'actionTo',
+    subtype,
+    data: deepClone(meta.defaults || {})
+  };
+}
+
+function assignWrapperChild(block, childBlock){
+  if (!block || !childBlock) return;
+  block.data = block.data || {};
+  block.data.child = {
+    kind: childBlock.kind || 'action',
+    subtype: childBlock.subtype,
+    data: deepClone(childBlock.data || {})
+  };
+}
+
+function parseWrappedAction(key, rawValue, warnings, ctx, originalLine){
+  const block = createActionToBlock(key);
+  if (!block){
+    warnings.push(`Acción no soportada "${originalLine}" ${ctx}`);
+    return null;
+  }
+
+  const ensureChild = (line) => {
+    const childLine = String(line || '').trim();
+    if (!childLine){
+      warnings.push(`La acción "${originalLine}" no tiene acción interna ${ctx}`);
+      return;
+    }
+    const child = parseActionLine(childLine, warnings, `${ctx} (acción interna de ${key})`);
+    if (!child) return;
+    assignWrapperChild(block, child);
+  };
+
+  const valueStr = String(rawValue ?? '').trim();
+
+  if (key === 'to_all' || key === 'to_target'){
+    ensureChild(valueStr);
+    return block;
+  }
+
+  const colonIdx = valueStr.indexOf(':');
+  if (colonIdx === -1){
+    warnings.push(`Formato inválido para "${originalLine}" ${ctx}`);
+    return block;
+  }
+
+  const head = valueStr.slice(0, colonIdx).trim();
+  const tail = valueStr.slice(colonIdx + 1).trim();
+
+  switch(key){
+    case 'to_range': {
+      const [radiusPartRaw = '', includePartRaw = ''] = head.split(';');
+      const radiusPart = stripQuotes(radiusPartRaw);
+      const includePart = stripQuotes(includePartRaw);
+      const parsedRadius = parseInt(radiusPart, 10);
+      if (!Number.isNaN(parsedRadius)){
+        block.data.radius = parsedRadius;
+      }
+      if (includePart){
+        block.data.includePlayer = parseBoolean(includePart);
+      }
+      ensureChild(tail);
+      break;
+    }
+    case 'to_player': {
+      const playerTarget = stripQuotes(head);
+      if (playerTarget){
+        block.data.player = playerTarget;
+      }
+      ensureChild(tail);
+      break;
+    }
+    case 'to_condition': {
+      const groupTarget = stripQuotes(head);
+      if (groupTarget){
+        block.data.group = groupTarget;
+      }
+      ensureChild(tail);
+      break;
+    }
+    default:
+      warnings.push(`Acción no soportada "${originalLine}" ${ctx}`);
+      return null;
+  }
+
+  return block;
+}
+
 function parseBoolean(value){
   if (typeof value === 'boolean') return value;
   if (typeof value === 'number') return value !== 0;
@@ -2590,7 +3051,7 @@ function parseConditionEntry(entry){
 
 function parseActionLine(entry, warnings, ctx){
   if (typeof entry !== 'string'){
-    warnings.push(`Entrada de acción inválida ${ctx}`);
+    warnings.push(`Invalid action input ${ctx}`);
     return null;
   }
   const clean = stripQuotes(entry);
@@ -2605,31 +3066,24 @@ function parseActionLine(entry, warnings, ctx){
     key = str.slice(0, colonIdx).trim().toLowerCase();
     value = str.slice(colonIdx + 1).trim();
   }
+  if (WRAPPER_ACTION_KEYS.has(key)){
+    return parseWrappedAction(key, value, warnings, ctx, str);
+  }
+
   const importer = ACTION_IMPORT_MAP[key];
   if (!importer){
-    warnings.push(`Acción no soportada "${str}" ${ctx}`);
+    warnings.push(`Action not supported "${str}" ${ctx}`);
     return null;
   }
   const block = importer(value);
   if (!block){
-    warnings.push(`No se pudo importar la acción "${str}" ${ctx}`);
+    warnings.push(`The action could not be imported "${str}" ${ctx}`);
     return null;
   }
   return block;
 }
 
 function parseSettingsForEvent(ev, raw, warnings){
-  if (raw.repetitive_time !== undefined){
-    const meta = REGISTRY.setting?.repetitive_time;
-    if (meta){
-      ev.blocks.push({
-        id: uid(),
-        kind: 'setting',
-        subtype: 'repetitive_time',
-        data: { ticks: parseNumber(raw.repetitive_time) }
-      });
-    }
-  }
   if (raw.ignore_with_permission){
     const meta = REGISTRY.setting?.ignore_with_permission;
     if (meta){
@@ -2641,8 +3095,71 @@ function parseSettingsForEvent(ev, raw, warnings){
       });
     }
   }
+  if (raw.ignore_if_cancelled !== undefined){
+    const meta = REGISTRY.setting?.ignore_if_cancelled;
+    if (meta){
+      ev.blocks.push({
+        id: uid(),
+        kind: 'setting',
+        subtype: 'ignore_if_cancelled',
+        data: { value: parseBoolean(raw.ignore_if_cancelled) }
+      });
+    }
+  }
+  if (raw.allow_math_formulas_in_conditions !== undefined){
+    const meta = REGISTRY.setting?.allow_math_formulas_in_conditions;
+    if (meta){
+      ev.blocks.push({
+        id: uid(),
+        kind: 'setting',
+        subtype: 'allow_math_formulas_in_conditions',
+        data: { value: parseBoolean(raw.allow_math_formulas_in_conditions) }
+      });
+    }
+  }
   if (raw.one_time !== undefined){
-    warnings.push(`El ajuste "one_time" del evento "${ev.name}" no es editable aún en el builder.`);
+    const meta = REGISTRY.setting?.one_time;
+    if (meta){
+      ev.blocks.push({
+        id: uid(),
+        kind: 'setting',
+        subtype: 'one_time',
+        data: { value: parseBoolean(raw.one_time) }
+      });
+    }
+  }
+  if (raw.cooldown !== undefined){
+    const meta = REGISTRY.setting?.cooldown;
+    if (meta){
+      ev.blocks.push({
+        id: uid(),
+        kind: 'setting',
+        subtype: 'cooldown',
+        data: { seconds: parseNumber(raw.cooldown) }
+      });
+    }
+  }
+  if (raw.enabled !== undefined){
+    const meta = REGISTRY.setting?.enabled;
+    if (meta){
+      ev.blocks.push({
+        id: uid(),
+        kind: 'setting',
+        subtype: 'enabled',
+        data: { value: parseBoolean(raw.enabled) }
+      });
+    }
+  }
+  if (raw.repetitive_time !== undefined){
+    const meta = REGISTRY.setting?.repetitive_time;
+    if (meta){
+      ev.blocks.push({
+        id: uid(),
+        kind: 'setting',
+        subtype: 'repetitive_time',
+        data: { ticks: parseNumber(raw.repetitive_time) }
+      });
+    }
   }
 }
 
@@ -2654,7 +3171,7 @@ function buildEventFromConfig(name, raw, warnings){
   evt.actionGroups = [];
 
   if (!evt.type){
-    warnings.push(`El evento "${name}" no tiene un "type" válido.`);
+    warnings.push(`The "${name}" event doesn't have a valid type.`);
   }
 
   parseSettingsForEvent(evt, raw, warnings);
@@ -2670,7 +3187,7 @@ function buildEventFromConfig(name, raw, warnings){
   conditionList.forEach((entry, idx) => {
     const parsed = parseConditionEntry(entry);
     if (!parsed){
-      warnings.push(`No se pudo interpretar la condición #${idx + 1} del evento "${name}".`);
+      warnings.push(`The condition #${idx + 1} of the event "${name}" could not be interpreted.`);
       return;
     }
     evt.blocks.push({
@@ -2686,7 +3203,7 @@ function buildEventFromConfig(name, raw, warnings){
     Object.entries(actionsNode).forEach(([groupName, entries]) => {
       const group = { id: uid(), name: String(groupName || 'group'), blocks: [] };
       normalizeList(entries).forEach((line, idx) => {
-        const block = parseActionLine(line, warnings, `en el grupo "${groupName}" del evento "${name}"`);
+        const block = parseActionLine(line, warnings, `in the "${groupName}" group of the "${name}" event"`);
         if (block) group.blocks.push(block);
       });
       evt.actionGroups.push(group);
@@ -2694,7 +3211,7 @@ function buildEventFromConfig(name, raw, warnings){
   } else if (Array.isArray(actionsNode)){
     const group = { id: uid(), name: 'default', blocks: [] };
     actionsNode.forEach((line, idx) => {
-      const block = parseActionLine(line, warnings, `en el evento "${name}"`);
+      const block = parseActionLine(line, warnings, `in the "${name}" event`);
       if (block) group.blocks.push(block);
     });
     evt.actionGroups.push(group);
@@ -2710,33 +3227,33 @@ function buildEventFromConfig(name, raw, warnings){
 function convertConfigToState(payload){
   const root = payload?.Events || payload?.events;
   if (!root || typeof root !== 'object'){
-    throw new Error('No se encontró la sección "Events".');
+    throw new Error('The "Events" section was not found.');
   }
   const warnings = [];
   const events = [];
   Object.entries(root).forEach(([name, raw]) => {
     if (!raw || typeof raw !== 'object'){
-      warnings.push(`El evento "${name}" fue ignorado por tener un formato inválido.`);
+      warnings.push(`The "${name}" event was ignored because it had an invalid format.`);
       return;
     }
     events.push(buildEventFromConfig(String(name), raw, warnings));
   });
   if (!events.length){
-    throw new Error('No se encontraron eventos válidos para importar.');
+    throw new Error('No valid events were found to import.');
   }
   return { events, warnings };
 }
 
 function parseConfigPayload(text){
   const trimmed = String(text ?? '').trim();
-  if (!trimmed) throw new Error('El contenido está vacío.');
+  if (!trimmed) throw new Error('The content is empty.');
   if (trimmed.startsWith('{') || trimmed.startsWith('[')){
     return JSON.parse(trimmed);
   }
   if (window.jsyaml && typeof window.jsyaml.load === 'function'){
     return window.jsyaml.load(trimmed);
   }
-  throw new Error('Formato no reconocido. No se pudo cargar YAML.');
+  throw new Error('Unrecognized format. Unable to load YAML.');
 }
 
 function anyModalVisible(){
@@ -2774,7 +3291,7 @@ function handleImportText(text, sourceLabel){
     }
     alert(message);
   } catch (err){
-    alert(`No se pudo importar${sourceLabel ? ` (${sourceLabel})` : ''}: ${err.message}`);
+    alert(`Unable to import${sourceLabel ? ` (${sourceLabel})` : ''}: ${err.message}`);
   }
 }
 
@@ -2823,7 +3340,7 @@ if (importFileInput){
       importFileInput.value = '';
     };
     reader.onerror = () => {
-      alert(`No se pudo leer el archivo "${file.name}".`);
+      alert(`The file could not be read "${file.name}".`);
       importFileInput.value = '';
     };
     reader.readAsText(file);
@@ -2844,7 +3361,7 @@ if (importPasteOption){
 if (importPasteConfirm){
   importPasteConfirm.addEventListener('click', () => {
     const text = importPasteTextarea ? importPasteTextarea.value : '';
-    handleImportText(text, 'texto pegado');
+    handleImportText(text, 'pasted text');
   });
 }
 
@@ -2875,8 +3392,8 @@ function getYAMLForExport() {
 document.getElementById('copyBtn').addEventListener('click', async ()=>{
   try{
     await navigator.clipboard.writeText(getYAMLForExport());
-    alert('YAML copiado ✅');
-  }catch(e){ alert('No se pudo copiar'); }
+    alert('Copied YAML');
+  }catch(e){ alert('Unable to copy'); }
 });
 document.getElementById('downloadBtn').addEventListener('click', ()=>{
   const out = getYAMLForExport();
@@ -2885,6 +3402,13 @@ document.getElementById('downloadBtn').addEventListener('click', ()=>{
   a.href = URL.createObjectURL(blob);
   a.download = 'events.yml';
   document.body.appendChild(a); a.click(); a.remove();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const uploadIcon = document.querySelector('#importUploadOption .icon');
+  const pasteIcon = document.querySelector('#importPasteOption .icon');
+  if (uploadIcon) uploadIcon.innerHTML = ICONS.cloudUpload;
+  if (pasteIcon) pasteIcon.innerHTML = ICONS.clipboardPaste;
 });
 
 /* ---------- Boot ---------- */

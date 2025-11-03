@@ -329,19 +329,19 @@ body.modal-open { overflow: hidden; }
   to { opacity: 1; transform: translateY(0); }
 }
 
-footer a {
+a {
   color: #a78bfa; /* violeta suave */
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s ease, text-shadow 0.2s ease;
 }
 
-footer a:hover {
+a:hover {
   color: #c084fc; /* un poco más brillante */
   text-shadow: 0 0 6px rgb(192, 132, 252);
 }
 
-footer a:visited {
+a:visited {
   color: #a78bfa; /* mismo color que normal */
 }
 
@@ -449,4 +449,21 @@ footer a:visited {
   height: 16px;
   stroke: currentColor;
   display: block;
+}
+
+.modal-option .icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.modal-option .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #2b3250;
+  border-radius: 99px;
+  margin-right: 2px;
+  flex-shrink: 0;
 }
