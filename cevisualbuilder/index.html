@@ -15,8 +15,8 @@
         </div>
         <h3>Rotate your device or enlarge the window</h3>
         <p>
-          To use the builder, turn your phone horizontally or increase the
-          width to <strong id="minWidthText">980 px</strong> or more.
+          To use the builder, turn your phone horizontally or increase the width
+          to <strong id="minWidthText">980 px</strong> or more.
         </p>
       </div>
     </div>
@@ -36,7 +36,11 @@
           </div>
         </div>
         <div class="palette-grid">
-          <nav id="paletteNav" class="palette-nav" aria-label="Categorías de bloques"></nav>
+          <nav
+            id="paletteNav"
+            class="palette-nav"
+            aria-label="Categorías de bloques"
+          ></nav>
           <div class="palette" id="palette"></div>
         </div>
       </div>
@@ -76,17 +80,34 @@
     <button id="yamlShowBtn" class="yaml-peek" title="Show YAML">YML</button>
 
     <footer>
-      Made with ♥ to create and visualize <b><a href="https://www.spigotmc.org/resources/conditionalevents-custom-actions-for-specific-events-1-8-1-21-10.82271/" target="_blank">ConditionalEvents</a></b> events.
+      Made with ♥ to create and visualize
       <b
-        >This site is not affiliated with Ajneb97 or the team behind ConditionalEvents. Created by MaxxVoiid, site hosted at
-        <a href="https://utility.mxvd.me" target="_blank">utility.mxvd.me</a
-        > ;)</b>
+        ><a
+          href="https://www.spigotmc.org/resources/conditionalevents-custom-actions-for-specific-events-1-8-1-21-10.82271/"
+          target="_blank"
+          >ConditionalEvents</a
+        ></b
+      >
+      events.
+      <b
+        >This site is not affiliated with Ajneb97 or the team behind
+        ConditionalEvents. Created by MaxxVoiid, site hosted at
+        <a href="https://utility.mxvd.me" target="_blank">utility.mxvd.me</a>
+        ;)</b
+      >
     </footer>
 
     <div class="modal-overlay" id="importOverlay" aria-hidden="true">
-      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+      <div
+        class="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="importTitle"
+      >
         <h2 id="importTitle">Import configuration</h2>
-        <p class="modal-note">Choose how you want to load your ConditionalEvents file.</p>
+        <p class="modal-note">
+          Choose how you want to load your ConditionalEvents file.
+        </p>
         <div class="modal-options">
           <button class="modal-option" type="button" id="importUploadOption">
             <span class="icon" aria-hidden="true">☁️</span>
@@ -104,19 +125,36 @@
           </button>
         </div>
         <div class="modal-actions">
-          <button class="btn secondary" type="button" data-import-close>Cancel</button>
+          <button class="btn secondary" type="button" data-import-close>
+            Cancel
+          </button>
         </div>
       </div>
     </div>
 
     <div class="modal-overlay" id="importPasteOverlay" aria-hidden="true">
-      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="importPasteTitle">
+      <div
+        class="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="importPasteTitle"
+      >
         <h2 id="importPasteTitle">Paste configuration</h2>
-        <p class="modal-note">Paste the JSON or YAML from your <code>events.yml</code> file.</p>
-        <textarea id="importPasteTextarea" spellcheck="false" placeholder="Events:&#10;  myEvent:&#10;    type: block_interact&#10;    ..."></textarea>
+        <p class="modal-note">
+          Paste the JSON or YAML from your <code>events.yml</code> file.
+        </p>
+        <textarea
+          id="importPasteTextarea"
+          spellcheck="false"
+          placeholder="Events:&#10;  myEvent:&#10;    type: block_interact&#10;    ..."
+        ></textarea>
         <div class="modal-actions">
-          <button class="btn" type="button" id="importPasteConfirm">Import</button>
-          <button class="btn secondary" type="button" data-paste-close>Cancel</button>
+          <button class="btn" type="button" id="importPasteConfirm">
+            Import
+          </button>
+          <button class="btn secondary" type="button" data-paste-close>
+            Cancel
+          </button>
         </div>
       </div>
     </div>
