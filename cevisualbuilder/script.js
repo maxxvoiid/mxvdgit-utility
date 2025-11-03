@@ -1806,6 +1806,68 @@ const REGISTRY = {
         body.querySelector('input').addEventListener('input', e=>{ block.data.ticks = parseInt(e.target.value||'0',10); update(); });
       }
     },
+    custom_event_data: {
+      label: 'Custom Event Data',
+      className: 'setting',
+      defaults: {
+        event: '',
+        player_variable: '',
+        variables: []
+      },
+      settingKey: 'custom_event_data',
+      render(body, block, update){
+        block.data = Object.assign({ event: '', player_variable: '', variables: [] }, block.data || {});
+        if (!Array.isArray(block.data.variables)) {
+          const fallback = Array.isArray(block.data.variables_to_capture) ? block.data.variables_to_capture : [];
+          block.data.variables = fallback.filter(Boolean).map(v => String(v));
+        }
+        block.data.variables_to_capture = Array.isArray(block.data.variables)
+          ? block.data.variables.slice()
+          : [];
+        const varsText = block.data.variables.join('\n');
+        body.innerHTML = `
+          <small style="opacity:1;font-size:14px;display:block;margin-bottom:12px">
+            Configure the event class, optional player accessor, and any variables to capture for this custom event.
+          </small>
+          <div class="row single" style="gap:8px; align-items:center;">
+            <label style="opacity:.8;font-size:12px;min-width:110px">Event class</label>
+            <input type="text" value="${block.data.event || ''}" placeholder="com.example.plugin.MyEvent" />
+          </div>
+          <div class="row single" style="gap:8px; align-items:center; margin-top:8px;">
+            <label style="opacity:.8;font-size:12px;min-width:110px">Player variable</label>
+            <input type="text" value="${block.data.player_variable || ''}" placeholder="getPlayer()" />
+          </div>
+          <div class="row single" style="flex-direction:column; align-items:stretch; margin-top:12px; gap:6px;">
+            <label style="opacity:.8;font-size:12px;">Variables to capture</label>
+            <textarea rows="4" placeholder="%placeholder%;method()" style="min-height:96px">${varsText}</textarea>
+            <small style="opacity:.7;font-size:11px;">Write one entry per line using the format <code>%variable%;method()</code>.</small>
+          </div>
+        `;
+
+        const [eventInput, playerInput] = body.querySelectorAll('input');
+        const textarea = body.querySelector('textarea');
+
+        eventInput.addEventListener('input', e => {
+          block.data.event = e.target.value;
+          update();
+        });
+
+        playerInput.addEventListener('input', e => {
+          block.data.player_variable = e.target.value;
+          update();
+        });
+
+        textarea.addEventListener('input', e => {
+          const entries = e.target.value
+            .split(/\n+/)
+            .map(v => v.trim())
+            .filter(Boolean);
+          block.data.variables = entries;
+          block.data.variables_to_capture = entries.slice();
+          update();
+        });
+      }
+    },
   }
 };
 
@@ -1880,7 +1942,16 @@ const ICONS = {
   <path d="M12 16h.01"/>
   <path d="M12 8v4"/>
   <path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z"/>
-</svg>`
+</svg>`,
+  panelRightClose: `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+     fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round"
+     class="lucide lucide-panel-right-close">
+  <rect width="18" height="18" x="3" y="3" rx="2"/>
+  <path d="M15 3v18"/>
+  <path d="m8 9 3 3-3 3"/>
+</svg>`,
 };
 
 /* ---------- Helpers / UX ---------- */
@@ -2716,6 +2787,8 @@ function render(){
     canvas.appendChild(card);
   });
 
+  
+
   updateYAML();
 }
 
@@ -2730,9 +2803,14 @@ function buildYAML(){
 
     // settings desde blocks (kind=setting)
     const settings = {};
+    let customEventSetting = null;
     ev.blocks.forEach(b=>{
       const meta = REGISTRY[b.kind]?.[b.subtype];
       if(meta?.settingKey){
+        if (meta.settingKey === 'custom_event_data'){
+          customEventSetting = b;
+          return;
+        }
         settings[meta.settingKey] =
           ('ticks' in b.data) ? b.data.ticks :
           ('perm'  in b.data) ? b.data.perm  :
@@ -2745,6 +2823,37 @@ function buildYAML(){
         lines.push(`    ${k}: ${v}`); // true/false/numero/string salen bien en YAML
       }
     });
+
+    if (customEventSetting){
+      const data = customEventSetting.data || {};
+      if (data && typeof data === 'object'){
+        const eventClass = String(data.event || '').trim();
+        const playerVar = String(data.player_variable || '').trim();
+        const vars = Array.isArray(data.variables)
+          ? data.variables
+          : Array.isArray(data.variables_to_capture)
+            ? data.variables_to_capture
+            : [];
+
+        if(eventClass || playerVar || vars.length){
+          lines.push('    custom_event_data:');
+          if(eventClass) lines.push(`      event: '${escQ(eventClass)}'`);
+          if(playerVar) lines.push(`      player_variable: '${escQ(playerVar)}'`);
+          if(vars.length){
+            lines.push('      variables_to_capture:');
+            vars.forEach(v => {
+              const entry = String(v || '').trim();
+              if(entry) lines.push(`      - '${escQ(entry)}'`);
+            });
+          }
+        }
+      } else if (data !== undefined && data !== null) {
+        const rawValue = String(data);
+        if (rawValue){
+          lines.push(`    custom_event_data: '${escQ(rawValue)}'`);
+        }
+      }
+    }
 
     // conditions (desde blocks)
     const conds = ev.blocks.filter(b=>b.kind==='condition').map(b=>{
@@ -2811,6 +2920,11 @@ yamlShowBtn.addEventListener('click', expandYAML);
 window.addEventListener('resize', applyResponsiveYAML);
 window.addEventListener('orientationchange', applyResponsiveYAML);
 
+const collapseBtn = document.getElementById('collapseBtn');
+if (collapseBtn) {
+  collapseBtn.innerHTML = `${ICONS.panelRightClose}`;
+}
+
 /* ---------- Screen Guard ---------- */
 const guardEl = document.getElementById('screenGuard');
 function isPortrait(){ return window.matchMedia('(orientation: portrait)').matches; }
@@ -2875,6 +2989,7 @@ const ACTION_IMPORT_MAP = {
   summon: value => createActionBlock('summon', { cmd: String(value ?? '') }),
   call_event: value => createActionBlock('call_event', { cmd: String(value ?? '') }),
   execute_action_group: value => createActionBlock('execute_action_group', { cmd: String(value ?? '') }),
+  gamemode: value => createActionBlock('gamemode', { mode: parseGamemodeValue(value) }),
   keep_items: value => createActionBlock('keep_items', { mode: parseKeepItemsValue(value) }),
   cancel_drop: value => createActionBlock('cancel_drop', { value: parseBoolean(value) }),
   set_damage: value => {
@@ -3017,6 +3132,31 @@ function parseKeepItemsValue(value){
   const allowed = ['items', 'xp', 'all'];
   const mode = String(value ?? '').trim().toLowerCase();
   return allowed.includes(mode) ? mode : 'items';
+}
+
+function parseGamemodeValue(value){
+  if (typeof value === 'object' && value && typeof value.mode === 'string'){
+    return parseGamemodeValue(value.mode);
+  }
+  const str = String(value ?? '').trim();
+  if (!str) return 'SURVIVAL';
+  const upper = str.toUpperCase();
+  const normalized = {
+    '0': 'SURVIVAL',
+    '1': 'CREATIVE',
+    '2': 'ADVENTURE',
+    '3': 'SPECTATOR',
+    S: 'SURVIVAL',
+    SURVIVAL: 'SURVIVAL',
+    C: 'CREATIVE',
+    CREATIVE: 'CREATIVE',
+    A: 'ADVENTURE',
+    ADVENTURE: 'ADVENTURE',
+    SP: 'SPECTATOR',
+    SPEC: 'SPECTATOR',
+    SPECTATOR: 'SPECTATOR'
+  };
+  return normalized[upper] || 'SURVIVAL';
 }
 
 function resolveActionKind(subtype){
@@ -3184,6 +3324,37 @@ function parseSettingsForEvent(ev, raw, warnings){
         subtype: 'repetitive_time',
         data: { ticks: parseNumber(raw.repetitive_time) }
       });
+    }
+  }
+  if (raw.custom_event_data !== undefined){
+    const meta = REGISTRY.setting?.custom_event_data;
+    if (!meta){
+      warnings.push(`The "custom_event_data" setting for the "${ev.name}" event is not yet supported.`);
+    } else if (raw.custom_event_data && typeof raw.custom_event_data === 'object' && !Array.isArray(raw.custom_event_data)) {
+      const defaults = deepClone(meta.defaults || {});
+      const data = Object.assign({}, defaults);
+      if (raw.custom_event_data.event !== undefined){
+        data.event = String(raw.custom_event_data.event ?? '');
+      }
+      if (raw.custom_event_data.player_variable !== undefined){
+        data.player_variable = String(raw.custom_event_data.player_variable ?? '');
+      }
+      const varsSource = raw.custom_event_data.variables !== undefined
+        ? raw.custom_event_data.variables
+        : raw.custom_event_data.variables_to_capture;
+      const variables = normalizeList(varsSource)
+        .map(v => String(v ?? '').trim())
+        .filter(Boolean);
+      data.variables = variables;
+      data.variables_to_capture = variables.slice();
+      ev.blocks.push({
+        id: uid(),
+        kind: 'setting',
+        subtype: 'custom_event_data',
+        data
+      });
+    } else {
+      warnings.push(`The "custom_event_data" setting for the "${ev.name}" event has an invalid format.`);
     }
   }
 }
