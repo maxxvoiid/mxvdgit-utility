@@ -1819,6 +1819,13 @@ const ICONS = {
   <path d="M12 9v4"/>
   <path d="M12 17h.01"/>
 </svg>`,
+  chevronDown: `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+     fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round"
+     class="lucide lucide-chevron-down">
+  <path d="m6 9 6 6 6-6"/>
+</svg>`,
   trash: `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
      fill="none" stroke="currentColor" stroke-width="2"
@@ -2117,6 +2124,7 @@ function newEventSkeleton(name){
     id: uid(),
     name,
     type: null,
+    collapsed: false,
     // condiciones y settings siguen como "blocks" (no-actions)
     blocks: [],
     settings: {},
@@ -2528,29 +2536,45 @@ function render(){
     const card = document.createElement('div');
     card.className = 'event-card';
     card.dataset.eventId = ev.id;
+    card.classList.toggle('is-collapsed', Boolean(ev.collapsed));
 
     // header
     const head = document.createElement('div');
     head.className = 'event-top';
+    const eventLabel = ev.type
+      ? ('Event: '+ (Object.values(REGISTRY).find(cat => cat[ev.type])?.[ev.type]?.label || ev.type))
+      : '<em>Drag an Event type here</em>';
     head.innerHTML = `
-      <input class="event-name" value="${ev.name}" title="Event name" />
+      <div class="event-title">
+        <button class="icon-btn event-collapse" type="button" aria-expanded="${ev.collapsed ? 'false' : 'true'}" title="${ev.collapsed ? 'Expand event' : 'Collapse event'}" aria-label="${ev.collapsed ? 'Expand event' : 'Collapse event'}">${ICONS.chevronDown}</button>
+        <input class="event-name" value="${ev.name}" title="Event name" />
+      </div>
       <div class="event-type">
-        ${ev.type ? ('Event: '+ (Object.values(REGISTRY).find(cat => cat[ev.type])?.[ev.type]?.label || ev.type)) : '<em>Drag an Event type here</em>'}
+        ${eventLabel}
         <button class="icon-btn danger event-del" title="Delete event" aria-label="Delete event">${ICONS.trash}</button>
       </div>`;
+    const collapseBtn = head.querySelector('.event-collapse');
+    collapseBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      ev.collapsed = !ev.collapsed;
+      render();
+    });
     head.querySelector('.event-del').addEventListener('click', ()=>{
       if (confirm(`Delete the event "${ev.name}"?`)) removeEventCompletely(ev.id);
     });
     head.querySelector('.event-name').addEventListener('input', (e)=>{ ev.name = e.target.value; updateYAML(); });
     card.appendChild(head);
 
+    const bodyContainer = document.createElement('div');
+    bodyContainer.className = 'event-body';
+
     if (!ev.type) {
-      card.appendChild(renderMissingEventTypeNotice());
+      bodyContainer.appendChild(renderMissingEventTypeNotice());
     }
 
     // sección no-actions (conditions + settings)
-    const nonActionZone = createZone(ev, { 
-      type: 'non-action', 
+    const nonActionZone = createZone(ev, {
+      type: 'non-action',
       accept: [
         'condition', 
         'setting', 
@@ -2601,7 +2625,7 @@ function render(){
     hintNA.textContent = 'Drag events, conditions, or settings here...';
     nonActionZone.appendChild(hintNA);
     nonActionWrap.appendChild(nonActionZone);
-    card.appendChild(nonActionWrap);
+    bodyContainer.appendChild(nonActionWrap);
 
     // sección Action Groups
     const groupsHeader = document.createElement('div');
@@ -2613,7 +2637,7 @@ function render(){
         <button class="btn" title="Add action group">+ Add Group</button>
       </div>`;
     groupsHeader.querySelector('.btn').addEventListener('click', ()=>addActionGroup(ev.id, 'group'));
-    card.appendChild(groupsHeader);
+    bodyContainer.appendChild(groupsHeader);
 
     // pintar cada group
     ev.actionGroups.forEach((g, idx)=>{
@@ -2685,9 +2709,10 @@ function render(){
       bodyWrap.appendChild(zone);
       groupCard.appendChild(bodyWrap);
 
-      card.appendChild(groupCard);
+      bodyContainer.appendChild(groupCard);
     });
 
+    card.appendChild(bodyContainer);
     canvas.appendChild(card);
   });
 

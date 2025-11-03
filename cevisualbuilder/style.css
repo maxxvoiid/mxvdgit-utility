@@ -136,6 +136,13 @@ html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text);
 }
 
 .event-top { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 10px; background: color-mix(in oklab, var(--ev) 22%, #0a0d16); border-bottom: 1px solid var(--border); }
+.event-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.event-collapse { width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; }
+.event-collapse svg { width: 18px; height: 18px; transition: transform .2s ease; }
+.event-card.is-collapsed .event-collapse svg { transform: rotate(-90deg); }
+.event-card.is-collapsed .event-top { border-bottom: none; }
+.event-body { display: flex; flex-direction: column; }
+.event-card.is-collapsed .event-body { display: none; }
 .event-name { background: rgba(0,0,0,.24); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; color: #fff; width: 100%; font-weight: 700; }
 .event-type {
   font-size: 12px;
