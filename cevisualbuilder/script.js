@@ -41,7 +41,7 @@ const escQ = s => String(s ?? '').replace(/'/g, "''");
 const deepClone = o => JSON.parse(JSON.stringify(o));
 const slugKey = s => String(s||'').trim().toLowerCase().replace(/[^a-z0-9_-]+/g,'_') || 'group';
 
-const LONG_PRESS_MS = 200;
+const LONG_PRESS_MS = 150;
 const MOVE_TOLERANCE = 12; // px de "touch slop" para distinguir scroll de drag
 
 /* ---------- REGISTRY (igual que el tuyo; puedes editar aquí para añadir bloques) ---------- */
@@ -2261,17 +2261,27 @@ function renameActionGroup(eventId, groupId, newName){
 function setupDragAndTouch(){
   const palette = document.getElementById('palette');
 
+  const isTouchDevice = (
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0 ||
+    navigator.msMaxTouchPoints > 0
+  );
+
   // Desktop native DnD
-  palette.querySelectorAll('.chip').forEach(chip => chip.setAttribute('draggable','true'));
-  palette.addEventListener('dragstart', (e) => {
-    const el = e.target.closest('.chip');
-    if(!el) return;
-    const payload = { kind: el.dataset.kind, subtype: el.dataset.subtype };
-    e.dataTransfer.setData('application/json', JSON.stringify(payload));
-    e.dataTransfer.effectAllowed = 'copy';
-    el.classList.add('dragging');
-  });
-  palette.addEventListener('dragend', (e) => { e.target.closest('.chip')?.classList.remove('dragging'); });
+  if (!isTouchDevice) {
+    palette.querySelectorAll('.chip').forEach(chip => chip.setAttribute('draggable','true'));
+    palette.addEventListener('dragstart', (e) => {
+      const el = e.target.closest('.chip');
+      if(!el) return;
+      const payload = { kind: el.dataset.kind, subtype: el.dataset.subtype };
+      e.dataTransfer.setData('application/json', JSON.stringify(payload));
+      e.dataTransfer.effectAllowed = 'copy';
+      el.classList.add('dragging');
+    });
+    palette.addEventListener('dragend', (e) => { e.target.closest('.chip')?.classList.remove('dragging'); });
+  } else {
+    palette.querySelectorAll('.chip').forEach(chip => chip.removeAttribute('draggable'));
+  }
 
   // Touch (mobile) — long-press to start drag sin romper el scroll
   let pressedChip = null;
