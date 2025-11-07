@@ -35,6 +35,106 @@ body {
   scrollbar-gutter: stable;
 }
 
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+  background: radial-gradient(circle at top, rgba(79, 140, 255, 0.25), transparent 65%),
+    var(--bg);
+  z-index: 9999;
+}
+
+.loader-card {
+  max-width: min(520px, 100%);
+  background: color-mix(in oklab, var(--panel) 80%, #0b0d14);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 32px 36px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--text);
+}
+
+.loader-card h1 {
+  font-size: clamp(1.6rem, 1.3rem + 1vw, 2.1rem);
+  margin: 0;
+}
+
+.loader-card h2 {
+  font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.3rem);
+  font-weight: 400;
+  margin: 0;
+  color: var(--muted);
+}
+
+.loader-card p {
+  margin: 0;
+  color: rgba(231, 237, 247, 0.8);
+}
+
+.loader-spinner {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 8px;
+  border-radius: 50%;
+  border: 6px solid rgba(255, 255, 255, 0.12);
+  border-top-color: var(--ev);
+  animation: loader-spin 1.1s linear infinite;
+}
+
+.loader-button {
+  margin: 12px auto 0;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: color-mix(in oklab, var(--ev) 45%, #141823);
+  color: #f1f6ff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.loader-button:hover,
+.loader-button:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(79, 140, 255, 0.28);
+}
+
+.loader-button:focus-visible {
+  outline: 2px solid rgba(79, 140, 255, 0.85);
+  outline-offset: 3px;
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .loader-card {
+    padding: 28px 24px;
+    gap: 14px;
+  }
+
+  .loader-button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-spinner {
+    animation-duration: 1.6s;
+  }
+}
+
 .app {
   height: 100%;
   display: grid;

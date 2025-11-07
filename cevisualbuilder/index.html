@@ -7,6 +7,29 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <div
+      class="loader-overlay"
+      id="loadingOverlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="loadingTitle"
+    >
+      <div class="loader-card">
+        <div class="loader-spinner" aria-hidden="true"></div>
+        <h1 id="loadingTitle">Iniciando el constructor visual</h1>
+        <h2>
+          Preparando la experiencia para crear eventos de ConditionalEvents.
+        </h2>
+        <p>
+          Mantén esta pestaña abierta mientras terminamos de cargar. La
+          aplicación aparecerá automáticamente en unos segundos.
+        </p>
+        <button type="button" class="loader-button" id="loaderContinue">
+          Abrir ahora
+        </button>
+      </div>
+    </div>
+
     <!-- Screen Guard -->
     <div id="screenGuard" class="hidden" aria-modal="true" role="dialog">
       <div class="card">
@@ -21,7 +44,7 @@
       </div>
     </div>
 
-    <div class="app">
+    <div class="app is-hidden">
       <!-- LEFT: PALETTE -->
       <div class="panel">
         <div class="panel-header palette-header">

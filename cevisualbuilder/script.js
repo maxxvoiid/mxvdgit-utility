@@ -6,6 +6,8 @@ const state = { events: [], dragData: null };
 const canvas = document.getElementById('canvas');
 const ymlOut = document.getElementById('yml');
 const appEl = document.querySelector('.app');
+const loaderOverlay = document.getElementById('loadingOverlay');
+const loaderContinueBtn = document.getElementById('loaderContinue');
 const yamlPanel = document.getElementById('yamlPanel');
 const yamlShowBtn = document.getElementById('yamlShowBtn');
 const paletteSearchInput = document.getElementById('paletteSearch');
@@ -21,6 +23,28 @@ const importPasteTextarea = document.getElementById('importPasteTextarea');
 const importPasteConfirm = document.getElementById('importPasteConfirm');
 const importCloseButtons = document.querySelectorAll('[data-import-close]');
 const importPasteCloseButtons = document.querySelectorAll('[data-paste-close]');
+
+const hideLoader = () => {
+  if (loaderOverlay) {
+    loaderOverlay.classList.add('is-hidden');
+    loaderOverlay.setAttribute('aria-hidden', 'true');
+  }
+  if (appEl) {
+    appEl.classList.remove('is-hidden');
+    appEl.removeAttribute('aria-hidden');
+  }
+};
+
+if (loaderOverlay) {
+  if (appEl) {
+    appEl.setAttribute('aria-hidden', 'true');
+  }
+  setTimeout(hideLoader, 5000);
+
+  if (loaderContinueBtn) {
+    loaderContinueBtn.addEventListener('click', hideLoader);
+  }
+}
 
 if(paletteSearchInput){
   paletteSearchInput.addEventListener('input', (event) => {
