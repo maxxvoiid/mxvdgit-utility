@@ -21,6 +21,16 @@ const importPasteTextarea = document.getElementById('importPasteTextarea');
 const importPasteConfirm = document.getElementById('importPasteConfirm');
 const importCloseButtons = document.querySelectorAll('[data-import-close]');
 const importPasteCloseButtons = document.querySelectorAll('[data-paste-close]');
+const introOverlay = document.getElementById('introOverlay');
+
+if (introOverlay) {
+  setTimeout(() => {
+    introOverlay.classList.add('intro-overlay--hidden');
+    setTimeout(() => {
+      introOverlay.remove();
+    }, 360);
+  }, 5000);
+}
 
 if(paletteSearchInput){
   paletteSearchInput.addEventListener('input', (event) => {
