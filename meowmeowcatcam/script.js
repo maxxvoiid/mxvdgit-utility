@@ -2,6 +2,7 @@ import {
   HandLandmarker,
   FaceLandmarker,
   FilesetResolver,
+  DrawingUtils,
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 
 // ---- meme mapping -----------------------------------------------------
@@ -51,6 +52,18 @@ const HAND_COVER_FACE_DIST_FACE_SEEN = 0.7;
 const video = document.getElementById("video");
 const memeImg = document.getElementById("memeImg");
 const debugHud = document.getElementById("debugHud");
+const overlay = document.getElementById("overlay");
+const overlayCtx = overlay.getContext("2d");
+const drawingUtils = new DrawingUtils(overlayCtx);
+
+// debug overlay (hand points, finger states, face references). Tap the
+// camera to hide/show it, or open the page with ?debug=0 to start hidden.
+let debugOn = new URLSearchParams(location.search).get("debug") !== "0";
+let lastHandResult = null;
+let lastRawGesture = "default";
+let fps = 0;
+let fpsFrames = 0;
+let fpsSince = performance.now();
 
 let handLandmarker, faceLandmarker;
 let lastVideoTime = -1;
@@ -94,6 +107,24 @@ async function init() {
   });
   video.srcObject = stream;
   await video.play();
+
+  // the overlay canvas uses the camera's native resolution and the same CSS
+  // (object-fit + mirroring) as the <video>, so normalized landmark
+  // coordinates line up exactly with what's on screen.
+  overlay.width = video.videoWidth;
+  overlay.height = video.videoHeight;
+  video.parentElement.addEventListener("click", () => {
+    debugOn = !debugOn;
+    drawOverlay();
+    updateDebugHud();
+  });
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "d" || e.key === "D") {
+      debugOn = !debugOn;
+      drawOverlay();
+      updateDebugHud();
+    }
+  });
 
   requestAnimationFrame(loop);
 }
@@ -328,6 +359,8 @@ function loop() {
     updateFace(faceResult);
 
     const gesture = decideGesture(handResult);
+    lastHandResult = handResult;
+    lastRawGesture = gesture;
 
     // debounce: require a gesture to be seen for several consecutive
     // frames before we commit to it, to avoid flicker between frames
@@ -347,16 +380,133 @@ function loop() {
       applyGesture("default");
     }
 
+    fpsFrames++;
+    if (now - fpsSince >= 500) {
+      fps = (fpsFrames * 1000) / (now - fpsSince);
+      fpsFrames = 0;
+      fpsSince = now;
+    }
+
+    drawOverlay();
     updateDebugHud();
   }
   requestAnimationFrame(loop);
 }
 
+function drawOverlay() {
+  const W = overlay.width;
+  const H = overlay.height;
+  overlayCtx.clearRect(0, 0, W, H);
+  if (!debugOn) return;
+
+  const dot = (p, r, fill) => {
+    overlayCtx.beginPath();
+    overlayCtx.arc(p.x * W, p.y * H, r, 0, Math.PI * 2);
+    overlayCtx.fillStyle = fill;
+    overlayCtx.fill();
+    overlayCtx.lineWidth = 2;
+    overlayCtx.strokeStyle = "#000";
+    overlayCtx.stroke();
+  };
+
+  // hands: skeleton + all 21 points, then big dots on the fingertips
+  // (green = extended, red = curled) - exactly what classifyHand() decides.
+  for (const lm of (lastHandResult && lastHandResult.landmarks) || []) {
+    drawingUtils.drawConnectors(lm, HandLandmarker.HAND_CONNECTIONS, {
+      color: "#ffffffb0",
+      lineWidth: Math.max(2, W / 220),
+    });
+    drawingUtils.drawLandmarks(lm, {
+      color: "#000",
+      fillColor: "#7cffa0",
+      lineWidth: 1,
+      radius: 3,
+    });
+    const h = classifyHand(lm);
+    const tips = [
+      [8, h.indexUp],
+      [12, h.middleUp],
+      [16, h.ringUp],
+      [20, h.pinkyUp],
+      [4, h.thumbOut],
+    ];
+    for (const [idx, on] of tips) {
+      dot(lm[idx], Math.max(6, W / 70), on ? "#00e676" : "#ff5252");
+    }
+  }
+
+  // face references used by the rules (blue = tracked now, orange = stale)
+  const now = performance.now();
+  if (lastFace && now - lastFace.t < FACE_STALE_MS) {
+    const color = lastFaceSeenThisFrame ? "#4fc3f7" : "#ffb300";
+    const m = lastFace.mouthCenter;
+    const fw = lastFace.faceWidth;
+
+    // mouth point
+    dot(m, Math.max(6, W / 70), color);
+
+    // "shhh" zone: index fingertip closer than 0.55 face widths to the mouth
+    overlayCtx.beginPath();
+    overlayCtx.ellipse(m.x * W, m.y * H, 0.55 * fw * W, 0.55 * fw * H, 0, 0, Math.PI * 2);
+    overlayCtx.lineWidth = 2;
+    overlayCtx.strokeStyle = color;
+    overlayCtx.setLineDash([6, 6]);
+    overlayCtx.stroke();
+
+    // "head top" line: palms above this count as hands on head
+    const y = (m.y - fw * 1.1) * H;
+    overlayCtx.beginPath();
+    overlayCtx.moveTo((m.x - fw) * W, y);
+    overlayCtx.lineTo((m.x + fw) * W, y);
+    overlayCtx.stroke();
+    overlayCtx.setLineDash([]);
+  }
+}
+
 function updateDebugHud() {
   if (!debugHud) return;
-  debugHud.textContent =
-    `gesture: ${currentGesture}\n` +
-    `yaw: ${lastYawDebug >= 0 ? "+" : ""}${lastYawDebug.toFixed(1)} deg  (side-eye thr +/-${SIDE_EYE_YAW_DEG.toFixed(1)})`;
+  if (!debugOn) {
+    debugHud.textContent = `gesture: ${currentGesture}  (tap = debug)`;
+    return;
+  }
+
+  const now = performance.now();
+  const lines = [];
+  lines.push(`gesture: ${currentGesture}`);
+  lines.push(`raw: ${lastRawGesture}  streak: ${Math.min(candidateStreak, STABLE_FRAMES_REQUIRED)}/${STABLE_FRAMES_REQUIRED}`);
+
+  const lms = (lastHandResult && lastHandResult.landmarks) || [];
+  const faceState = lastFaceSeenThisFrame
+    ? "tracked"
+    : lastFace && now - lastFace.t < FACE_STALE_MS
+    ? "stale"
+    : "none";
+  lines.push(`fps: ${fps.toFixed(0)}  hands: ${lms.length}  face: ${faceState}`);
+
+  const arrow = (v) => (v ? "▲" : "▼");
+  const hands = lms.map(classifyHand);
+  hands.forEach((h, i) => {
+    lines.push(
+      `H${i + 1} I${arrow(h.indexUp)} M${arrow(h.middleUp)} R${arrow(h.ringUp)} P${arrow(h.pinkyUp)} T${arrow(h.thumbOut)} curled:${h.curledCount}`
+    );
+  });
+
+  if (hands.length === 2) {
+    const avgScale = (hands[0].handScale + hands[1].handScale) / 2;
+    const gap = dist(hands[0].indexTip, hands[1].indexTip) / avgScale;
+    lines.push(`tip gap: ${gap.toFixed(2)} (touch < 1.40)`);
+  }
+
+  if (lastFace) {
+    lines.push(`mouth open: ${lastFace.mouthOpen.toFixed(3)}  face w: ${lastFace.faceWidth.toFixed(3)}`);
+    if (hands.length > 0) {
+      const d = dist(hands[0].indexTip, lastFace.mouthCenter) / lastFace.faceWidth;
+      lines.push(`H1 tip->mouth: ${d.toFixed(2)} (shhh < 0.55)`);
+    }
+  }
+  lines.push(`yaw: ${lastYawDebug >= 0 ? "+" : ""}${lastYawDebug.toFixed(1)} deg (side-eye thr +/-${SIDE_EYE_YAW_DEG.toFixed(1)})`);
+  lines.push("tap = hide debug");
+  debugHud.textContent = lines.join("\n");
 }
 
 init().catch((err) => console.error(err));
