@@ -2,3 +2,4 @@
 - [CE Visual Builder](./cevisualbuilder)
 - [Sprite Sheet Slicer](./spritesheetslicer)
 - [Umbral Timer](./umbraltimer)
+- [Meow Meow Cat Cam](./meowmeowcatcam)
