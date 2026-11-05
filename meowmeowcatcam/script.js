@@ -25,6 +25,7 @@ const GESTURE_MEMES = {
   twoHandsOnHead: ["memes/two hands on head .jpg"],
   handStretchedOut: ["memes/hand stretched out, palm facing up .jpg"],
   sideEyeCat: ["memes/side eye cat.jpg"],
+  middleFinger: ["memes/middle-finger.png"],
 };
 
 // how many consecutive frames a gesture must hold before we switch to it
@@ -234,6 +235,11 @@ function isPointing(h) {
   return h.indexUp && !h.middleUp && !h.ringUp && !h.pinkyUp;
 }
 
+// only the middle finger extended (thumb can be either way)
+function isMiddleFinger(h) {
+  return h.middleUp && !h.indexUp && !h.ringUp && !h.pinkyUp;
+}
+
 function decideGesture(handResult) {
   const now = performance.now();
   const faceIsFresh = !!lastFace && now - lastFace.t < FACE_STALE_MS;
@@ -248,6 +254,12 @@ function decideGesture(handResult) {
   }
 
   const hands = handResult.landmarks.map(classifyHand);
+
+  // middle finger: very specific shape, so it wins over everything else
+  // (on either hand when two are visible).
+  if (hands.some(isMiddleFinger)) {
+    return "middleFinger";
+  }
 
   if (hands.length === 2) {
     // two fingers pointing together: both hands pointing with just the
